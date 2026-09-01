@@ -22,10 +22,7 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               'Your delivery app is ready',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade700,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
             ),
           ],
         ),
