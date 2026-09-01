@@ -1,10 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:godelivery/app/app.dart';
 
 void main() {
-  testWidgets('GoDelivery app loads', (WidgetTester tester) async {
+  testWidgets('GoDelivery splash screen loads', (WidgetTester tester) async {
     await tester.pumpWidget(const GoDeliveryApp());
 
-    expect(find.text('GoDelivery'), findsOneWidget);
+    expect(find.byType(Image), findsAtLeastNWidgets(1));
   });
 }

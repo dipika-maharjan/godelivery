@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../features/splash/presentation/splash_screen.dart';
 import 'theme/app_theme.dart';
 
 class GoDeliveryApp extends StatelessWidget {
@@ -9,16 +10,9 @@ class GoDeliveryApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-
       title: 'GoDelivery',
-
       theme: AppTheme.lightTheme,
-
-      home: const Scaffold(
-        body: Center(
-          child: Text('GoDelivery'),
-        ),
-      ),
+      home: const SplashScreen(),
     );
   }
 }
