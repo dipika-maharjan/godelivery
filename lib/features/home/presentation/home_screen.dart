@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../account/presentation/account_screen.dart';
+import '../../order/presentation/create_order_screen.dart';
+import '../../order/presentation/order_screen.dart';
+import '../../shipment/presentation/shipment_screen.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -10,24 +15,23 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _screens = [
-    _OrdersTab(),
-    _ShipmentTab(),
-    _AccountTab(),
+  List<Widget> get _screens => [
+    const OrderScreen(),
+    const ShipmentScreen(),
+    const AccountPage(),
   ];
 
   void _onCreatePressed() {
-    setState(() => _selectedIndex = 0);
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const CreateOrderScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _screens),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Padding(
@@ -91,11 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.add,
-                    color: Colors.white,
-                    size: 32,
-                  ),
+                  child: const Icon(Icons.add, color: Colors.white, size: 32),
                 ),
               ),
             ],
@@ -128,7 +128,9 @@ class _NavButton extends StatelessWidget {
         children: [
           Icon(
             icon,
-            color: isSelected ? const Color(0xFFF3C91F) : const Color(0xFF6E6E6E),
+            color: isSelected
+                ? const Color(0xFFF3C91F)
+                : const Color(0xFF6E6E6E),
             size: 26,
           ),
           const SizedBox(height: 4),
@@ -137,52 +139,12 @@ class _NavButton extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? const Color(0xFFF3C91F) : const Color(0xFF6E6E6E),
+              color: isSelected
+                  ? const Color(0xFFF3C91F)
+                  : const Color(0xFF6E6E6E),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _OrdersTab extends StatelessWidget {
-  const _OrdersTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'Orders',
-        style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
-      ),
-    );
-  }
-}
-
-class _ShipmentTab extends StatelessWidget {
-  const _ShipmentTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'Shipment',
-        style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
-      ),
-    );
-  }
-}
-
-class _AccountTab extends StatelessWidget {
-  const _AccountTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'Account',
-        style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
       ),
     );
   }
