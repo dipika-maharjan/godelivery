@@ -5,9 +5,11 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/payment_display.dart';
 import '../../core/utils/status_display.dart';
 import '../../data/order_repository.dart';
 import '../../models/order.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/orders_provider.dart';
 import '../../widgets/order_status_chip.dart';
 
@@ -47,9 +49,10 @@ class _OrderDetailBody extends ConsumerStatefulWidget {
 class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
   bool _cancelling = false;
 
-  bool get _canCancel =>
-      widget.order.status == OrderStatus.pending ||
-      widget.order.status == OrderStatus.confirmed;
+  bool _canCancel(String? currentUserId) =>
+      widget.order.senderId == currentUserId &&
+      (widget.order.status == OrderStatus.pending ||
+          widget.order.status == OrderStatus.confirmed);
 
   Future<void> _cancel() async {
     setState(() => _cancelling = true);
@@ -62,9 +65,13 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
         context,
       ).showSnackBar(const SnackBar(content: Text('Shipment cancelled.')));
     } catch (e) {
-      final message = e is ApiException ? e.message : 'Could not cancel the shipment.';
+      final message = e is ApiException
+          ? e.message
+          : 'Could not cancel the shipment.';
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _cancelling = false);
     }
@@ -74,6 +81,7 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
   Widget build(BuildContext context) {
     final order = widget.order;
     final events = order.trackingEvents.reversed.toList();
+    final currentUserId = ref.watch(authControllerProvider).user?.id;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
@@ -91,9 +99,18 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
         const SizedBox(height: 4),
         Text(
           '${order.amount} ${order.currency} · ${order.distanceKm.toStringAsFixed(1)} km',
-          style: const TextStyle(color: AppColors.muted, fontSize: 13),
+          style: TextStyle(color: context.colors.textMuted, fontSize: 13),
         ),
+        const SizedBox(height: 10),
+        _PaymentSummary(order: order),
         const SizedBox(height: 20),
+        _AddressCard(
+          icon: LucideIcons.userRound,
+          label: 'Sender',
+          address:
+              '${order.senderName ?? order.senderShopName ?? 'Sender'} · ${order.senderPhoneNumber}',
+        ),
+        const SizedBox(height: 10),
         _AddressCard(
           icon: LucideIcons.store,
           label: 'Pickup',
@@ -121,12 +138,19 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(
               children: [
-                const Icon(LucideIcons.package, size: 16, color: AppColors.muted),
+                Icon(
+                  LucideIcons.package,
+                  size: 16,
+                  color: context.colors.textMuted,
+                ),
                 const SizedBox(width: 8),
                 Expanded(child: Text(p.name)),
                 Text(
                   '${p.weightKg} kg',
-                  style: const TextStyle(color: AppColors.muted, fontSize: 12.5),
+                  style: TextStyle(
+                    color: context.colors.textMuted,
+                    fontSize: 12.5,
+                  ),
                 ),
               ],
             ),
@@ -142,7 +166,7 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             isCurrent: entry.key == 0,
           ),
         ),
-        if (_canCancel) ...[
+        if (_canCancel(currentUserId)) ...[
           const SizedBox(height: 12),
           OutlinedButton(
             onPressed: _cancelling ? null : _cancel,
@@ -159,8 +183,88 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
   }
 }
 
+class _PaymentSummary extends StatelessWidget {
+  const _PaymentSummary({required this.order});
+
+  final Order order;
+
+  @override
+  Widget build(BuildContext context) {
+    final method = paymentMethodDisplayFor(order.paymentMethod);
+    final status = paymentStatusDisplayFor(order.paymentStatus);
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _PaymentPill(
+          icon: method.icon,
+          label: method.label,
+          color: context.colors.text,
+          background: context.colors.cardAlt,
+        ),
+        _PaymentPill(
+          icon: LucideIcons.userRound,
+          label: orderPayerLabel(order.payer),
+          color: context.colors.text,
+          background: context.colors.cardAlt,
+        ),
+        _PaymentPill(
+          icon: LucideIcons.circle,
+          label: status.label,
+          color: status.color,
+          background: status.color.withValues(alpha: 0.12),
+        ),
+      ],
+    );
+  }
+}
+
+class _PaymentPill extends StatelessWidget {
+  const _PaymentPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.background,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color background;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _AddressCard extends StatelessWidget {
-  const _AddressCard({required this.icon, required this.label, required this.address});
+  const _AddressCard({
+    required this.icon,
+    required this.label,
+    required this.address,
+  });
 
   final IconData icon;
   final String label;
@@ -171,13 +275,13 @@ class _AddressCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F8F8),
+        color: context.colors.card,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: AppColors.ink),
+          Icon(icon, size: 18, color: context.colors.text),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -185,7 +289,10 @@ class _AddressCard extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(fontSize: 11.5, color: AppColors.muted),
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: context.colors.textMuted,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(address, style: const TextStyle(fontSize: 13.5)),
@@ -224,17 +331,19 @@ class _TimelineTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isCurrent
                       ? display.color.withValues(alpha: 0.16)
-                      : const Color(0xFFF0F0F0),
+                      : context.colors.cardAlt,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   display.icon,
                   size: 15,
-                  color: isCurrent ? display.color : AppColors.muted,
+                  color: isCurrent ? display.color : context.colors.textMuted,
                 ),
               ),
               if (!isLast)
-                Expanded(child: Container(width: 2, color: AppColors.border)),
+                Expanded(
+                  child: Container(width: 2, color: context.colors.border),
+                ),
             ],
           ),
           const SizedBox(width: 12),
@@ -246,19 +355,28 @@ class _TimelineTile extends StatelessWidget {
                 children: [
                   Text(
                     event.title,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
                   ),
                   if (event.description != null) ...[
                     const SizedBox(height: 2),
                     Text(
                       event.description!,
-                      style: const TextStyle(fontSize: 12.5, color: AppColors.muted),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: context.colors.textMuted,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 3),
                   Text(
                     DateFormat('MMM d, h:mm a').format(event.createdAt),
-                    style: const TextStyle(fontSize: 11.5, color: AppColors.muted),
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: context.colors.textMuted,
+                    ),
                   ),
                 ],
               ),

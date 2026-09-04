@@ -11,11 +11,13 @@ class OrderListTile extends StatelessWidget {
     super.key,
     required this.order,
     required this.onTap,
+    required this.counterpartyName,
     this.counterpartyLabel = 'To',
   });
 
   final Order order;
   final VoidCallback onTap;
+  final String counterpartyName;
   final String counterpartyLabel;
 
   @override
@@ -27,9 +29,9 @@ class OrderListTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.card,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.colors.border),
         ),
         child: Row(
           children: [
@@ -39,10 +41,10 @@ class OrderListTile extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: 0.16),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 LucideIcons.package,
                 size: 20,
-                color: AppColors.ink,
+                color: context.colors.text,
               ),
             ),
             const SizedBox(width: 12),
@@ -59,19 +61,19 @@ class OrderListTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '$counterpartyLabel ${order.receiverName}',
+                    '$counterpartyLabel $counterpartyName',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.muted,
+                    style: TextStyle(
+                      color: context.colors.textMuted,
                       fontSize: 12.5,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     dateFormat.format(order.createdAt),
-                    style: const TextStyle(
-                      color: AppColors.muted,
+                    style: TextStyle(
+                      color: context.colors.textMuted,
                       fontSize: 11.5,
                     ),
                   ),

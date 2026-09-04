@@ -28,10 +28,20 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>GoDelivery uses your location to center the map when picking a shop or delivery location.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>GoDelivery uses your photo library to attach package photos to a shipment.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<!-- Local-dev only: lets debug builds reach a backend on your LAN (e.g.
+	     behind a Caddy proxy) over plain http://, without weakening ATS for
+	     the wider internet. Remove once pointed at a real, trusted backend. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

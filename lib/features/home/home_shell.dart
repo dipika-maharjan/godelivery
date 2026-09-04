@@ -22,6 +22,9 @@ class HomeShell extends ConsumerStatefulWidget {
 
 class _HomeShellState extends ConsumerState<HomeShell> {
   HomeTab _tab = HomeTab.track;
+  late final PageController _pageController = PageController(
+    initialPage: _tab.index,
+  );
 
   @override
   void initState() {
@@ -33,6 +36,12 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     });
   }
 
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   void _openCreateOrder() {
     showModalBottomSheet(
       context: context,
@@ -42,13 +51,24 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     );
   }
 
+  void _goToTab(HomeTab tab) {
+    setState(() => _tab = tab);
+    _pageController.animateToPage(
+      tab.index,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          IndexedStack(
-            index: _tab.index,
+          PageView(
+            controller: _pageController,
+            onPageChanged: (index) =>
+                setState(() => _tab = HomeTab.values[index]),
             children: const [TrackTab(), ShipmentsTab(), AccountTab()],
           ),
           Positioned(
@@ -64,10 +84,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _NavPill(
-                    current: _tab,
-                    onChanged: (tab) => setState(() => _tab = tab),
-                  ),
+                  _NavPill(current: _tab, onChanged: _goToTab),
                   const SizedBox(width: 12),
                   _PlusButton(onTap: _openCreateOrder),
                 ],
@@ -94,12 +111,12 @@ class _NotificationBellButton extends ConsumerWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.card,
           shape: BoxShape.circle,
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.colors.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: context.colors.shadowSoft,
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -108,15 +125,22 @@ class _NotificationBellButton extends ConsumerWidget {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            const Center(
-              child: Icon(LucideIcons.bell, size: 19, color: AppColors.ink),
+            Center(
+              child: Icon(
+                LucideIcons.bell,
+                size: 19,
+                color: context.colors.text,
+              ),
             ),
             if (unreadCount > 0)
               Positioned(
                 top: 2,
                 right: 4,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 1,
+                  ),
                   constraints: const BoxConstraints(minWidth: 15),
                   decoration: BoxDecoration(
                     color: AppColors.danger,
@@ -152,12 +176,12 @@ class _NavPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.card,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.colors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: context.colors.shadowSoft,
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -205,32 +229,38 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = selected ? AppColors.onPrimary : context.colors.text;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(24),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: selected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 19, color: AppColors.ink),
-            if (selected) ...[
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ink,
+        child: AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 19, color: color),
+              if (selected) ...[
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -255,13 +285,13 @@ class _PlusButton extends StatelessWidget {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
+              color: context.colors.shadowStrong,
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
           ],
         ),
-        child: const Icon(LucideIcons.plus, color: AppColors.ink),
+        child: const Icon(LucideIcons.plus, color: AppColors.onPrimary),
       ),
     );
   }

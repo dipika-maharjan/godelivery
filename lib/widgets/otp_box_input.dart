@@ -78,7 +78,7 @@ class _OtpBoxInputState extends State<OtpBoxInput> {
               counterText: '',
               contentPadding: EdgeInsets.zero,
               filled: true,
-              fillColor: const Color(0xFFF5F5F5),
+              fillColor: context.colors.cardAlt,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,

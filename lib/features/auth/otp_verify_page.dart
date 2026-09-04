@@ -69,9 +69,13 @@ class _OtpVerifyPageState extends ConsumerState<OtpVerifyPage> {
       ).showSnackBar(const SnackBar(content: Text('Code resent.')));
       _startCooldown();
     } catch (e) {
-      final message = e is ApiException ? e.message : 'Could not resend the code.';
+      final message = e is ApiException
+          ? e.message
+          : 'Could not resend the code.';
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _resending = false);
     }
@@ -97,9 +101,13 @@ class _OtpVerifyPageState extends ConsumerState<OtpVerifyPage> {
       // On LOGIN, AuthController already set authenticated state and the
       // router redirect takes over to send us to /home.
     } catch (e) {
-      final message = e is ApiException ? e.message : 'Invalid code, please try again.';
+      final message = e is ApiException
+          ? e.message
+          : 'Invalid code, please try again.';
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -114,11 +122,14 @@ class _OtpVerifyPageState extends ConsumerState<OtpVerifyPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Enter code', style: Theme.of(context).textTheme.headlineMedium),
+            Text(
+              'Enter code',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
             const SizedBox(height: 8),
             Text(
               'We sent a $_otpLength-digit code to +977 ${widget.phoneNumber}',
-              style: const TextStyle(color: AppColors.muted, fontSize: 13.5),
+              style: TextStyle(color: context.colors.textMuted, fontSize: 13.5),
             ),
             const SizedBox(height: 32),
             OtpBoxInput(

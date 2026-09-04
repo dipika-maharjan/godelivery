@@ -23,16 +23,19 @@ class PackageDraft {
     required this.name,
     required this.weightKg,
     this.isDangerous = false,
+    this.imageAssetIds = const [],
   });
 
   final String name;
   final double weightKg;
   final bool isDangerous;
+  final List<String> imageAssetIds;
 
   Map<String, dynamic> toJson() => {
     'name': name,
     'weightKg': weightKg,
     'isDangerous': isDangerous,
+    if (imageAssetIds.isNotEmpty) 'imageAssetIds': imageAssetIds,
   };
 }
 
@@ -94,14 +97,17 @@ class OrderRepository {
     String? receiverEmail,
     required LocationInput receiverLocation,
     required List<PackageDraft> packages,
+    OrderPayer payer = OrderPayer.sender,
+    PaymentMethod paymentMethod = PaymentMethod.cod,
   }) async {
     try {
       final response = await _dio.post(
         '/orders',
         data: {
           if (senderName != null) 'senderName': senderName,
-          if (pickupLocation != null)
-            'pickupLocation': pickupLocation.toJson(),
+          'payer': orderPayerToJson(payer),
+          'paymentMethod': paymentMethodToJson(paymentMethod),
+          if (pickupLocation != null) 'pickupLocation': pickupLocation.toJson(),
           'receiver': {
             'name': receiverName,
             'phoneNumber': receiverPhoneNumber,

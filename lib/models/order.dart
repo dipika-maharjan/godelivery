@@ -36,6 +36,44 @@ OrderStatus orderStatusFromJson(String value) {
   }
 }
 
+enum OrderPayer { sender, receiver }
+
+OrderPayer orderPayerFromJson(String value) =>
+    value == 'RECEIVER' ? OrderPayer.receiver : OrderPayer.sender;
+
+String orderPayerToJson(OrderPayer payer) => switch (payer) {
+  OrderPayer.sender => 'SENDER',
+  OrderPayer.receiver => 'RECEIVER',
+};
+
+enum PaymentMethod { cod, bankTransfer, esewa, khalti, fonepay, connectIps }
+
+PaymentMethod paymentMethodFromJson(String value) => switch (value) {
+  'BANK_TRANSFER' => PaymentMethod.bankTransfer,
+  'ESEWA' => PaymentMethod.esewa,
+  'KHALTI' => PaymentMethod.khalti,
+  'FONEPAY' => PaymentMethod.fonepay,
+  'CONNECTIPS' => PaymentMethod.connectIps,
+  _ => PaymentMethod.cod,
+};
+
+String paymentMethodToJson(PaymentMethod method) => switch (method) {
+  PaymentMethod.cod => 'COD',
+  PaymentMethod.bankTransfer => 'BANK_TRANSFER',
+  PaymentMethod.esewa => 'ESEWA',
+  PaymentMethod.khalti => 'KHALTI',
+  PaymentMethod.fonepay => 'FONEPAY',
+  PaymentMethod.connectIps => 'CONNECTIPS',
+};
+
+enum PaymentStatus { pending, paid, failed }
+
+PaymentStatus paymentStatusFromJson(String value) => switch (value) {
+  'PAID' => PaymentStatus.paid,
+  'FAILED' => PaymentStatus.failed,
+  _ => PaymentStatus.pending,
+};
+
 class MediaAsset {
   const MediaAsset({
     required this.id,
@@ -145,6 +183,9 @@ class Order {
     required this.trackingNumber,
     required this.senderId,
     this.senderName,
+    required this.senderPhoneNumber,
+    this.senderEmail,
+    this.senderShopName,
     required this.receiverId,
     required this.receiverName,
     required this.receiverPhoneNumber,
@@ -158,6 +199,10 @@ class Order {
     required this.hasDangerousGoods,
     required this.amount,
     required this.currency,
+    required this.payer,
+    required this.paymentMethod,
+    required this.paymentStatus,
+    this.paidAt,
     required this.status,
     required this.packages,
     required this.trackingEvents,
@@ -171,6 +216,9 @@ class Order {
       trackingNumber: json['trackingNumber'] as String,
       senderId: json['senderId'] as String,
       senderName: json['senderName'] as String?,
+      senderPhoneNumber: json['senderPhoneNumber'] as String,
+      senderEmail: json['senderEmail'] as String?,
+      senderShopName: json['senderShopName'] as String?,
       receiverId: json['receiverId'] as String,
       receiverName: json['receiverName'] as String,
       receiverPhoneNumber: json['receiverPhoneNumber'] as String,
@@ -192,6 +240,12 @@ class Order {
       hasDangerousGoods: json['hasDangerousGoods'] as bool,
       amount: json['amount'] as String,
       currency: json['currency'] as String,
+      payer: orderPayerFromJson(json['payer'] as String),
+      paymentMethod: paymentMethodFromJson(json['paymentMethod'] as String),
+      paymentStatus: paymentStatusFromJson(json['paymentStatus'] as String),
+      paidAt: json['paidAt'] == null
+          ? null
+          : DateTime.parse(json['paidAt'] as String),
       status: orderStatusFromJson(json['status'] as String),
       packages: (json['packages'] as List)
           .map((e) => OrderPackage.fromJson(e as Map<String, dynamic>))
@@ -208,6 +262,9 @@ class Order {
   final String trackingNumber;
   final String senderId;
   final String? senderName;
+  final String senderPhoneNumber;
+  final String? senderEmail;
+  final String? senderShopName;
   final String receiverId;
   final String receiverName;
   final String receiverPhoneNumber;
@@ -221,6 +278,10 @@ class Order {
   final bool hasDangerousGoods;
   final String amount;
   final String currency;
+  final OrderPayer payer;
+  final PaymentMethod paymentMethod;
+  final PaymentStatus paymentStatus;
+  final DateTime? paidAt;
   final OrderStatus status;
   final List<OrderPackage> packages;
   final List<OrderTrackingEvent> trackingEvents;

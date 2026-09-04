@@ -61,10 +61,10 @@ class AppTextField extends StatelessWidget {
           textCapitalization: textCapitalization,
           inputFormatters: inputFormatters,
           maxLength: maxLength,
-          style: const TextStyle(fontSize: 15, color: AppColors.ink),
+          style: TextStyle(fontSize: 15, color: context.colors.text),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.muted, fontSize: 14),
+            hintStyle: TextStyle(color: context.colors.textMuted, fontSize: 14),
             prefixIcon: prefix,
             suffixIcon: suffix,
             helperText: helperText,

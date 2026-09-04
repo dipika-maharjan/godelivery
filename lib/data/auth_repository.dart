@@ -17,10 +17,7 @@ class AuthRepository {
 
   Future<void> requestOtp(String phoneNumber) async {
     try {
-      await _dio.post(
-        '/auth/otp/request',
-        data: {'phoneNumber': phoneNumber},
-      );
+      await _dio.post('/auth/otp/request', data: {'phoneNumber': phoneNumber});
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }

@@ -32,7 +32,9 @@ class NotificationsPage extends ConsumerWidget {
         child: notifications.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => _ErrorState(
-            message: error is ApiException ? error.message : 'Something went wrong.',
+            message: error is ApiException
+                ? error.message
+                : 'Something went wrong.',
             onRetry: () => ref.invalidate(notificationsListProvider),
           ),
           data: (list) => list.isEmpty
@@ -80,10 +82,14 @@ class _NotificationTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: unread ? AppColors.primary.withValues(alpha: 0.10) : Colors.white,
+          color: unread
+              ? AppColors.primary.withValues(alpha: 0.10)
+              : context.colors.card,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: unread ? AppColors.primary.withValues(alpha: 0.4) : AppColors.border,
+            color: unread
+                ? AppColors.primary.withValues(alpha: 0.4)
+                : context.colors.border,
           ),
         ),
         child: Row(
@@ -113,12 +119,18 @@ class _NotificationTile extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     notification.body,
-                    style: const TextStyle(color: AppColors.muted, fontSize: 12.5),
+                    style: TextStyle(
+                      color: context.colors.textMuted,
+                      fontSize: 12.5,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     DateFormat('MMM d, h:mm a').format(notification.createdAt),
-                    style: const TextStyle(color: AppColors.muted, fontSize: 11),
+                    style: TextStyle(
+                      color: context.colors.textMuted,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
@@ -138,14 +150,14 @@ class _EmptyState extends StatelessWidget {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 32),
-      children: const [
-        SizedBox(height: 100),
-        Icon(LucideIcons.bellOff, size: 44, color: AppColors.muted),
-        SizedBox(height: 12),
+      children: [
+        const SizedBox(height: 100),
+        Icon(LucideIcons.bellOff, size: 44, color: context.colors.textMuted),
+        const SizedBox(height: 12),
         Text(
           "You're all caught up — no notifications yet.",
           textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.muted),
+          style: TextStyle(color: context.colors.textMuted),
         ),
       ],
     );
@@ -165,11 +177,24 @@ class _ErrorState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 32),
       children: [
         const SizedBox(height: 80),
-        const Icon(LucideIcons.circleAlert, size: 40, color: AppColors.muted),
+        Icon(
+          LucideIcons.circleAlert,
+          size: 40,
+          color: context.colors.textMuted,
+        ),
         const SizedBox(height: 12),
-        Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted)),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: context.colors.textMuted),
+        ),
         const SizedBox(height: 16),
-        Center(child: OutlinedButton(onPressed: onRetry, child: const Text('Try again'))),
+        Center(
+          child: OutlinedButton(
+            onPressed: onRetry,
+            child: const Text('Try again'),
+          ),
+        ),
       ],
     );
   }

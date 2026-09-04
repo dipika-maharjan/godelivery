@@ -6,14 +6,43 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/order_repository.dart';
+import '../../models/order.dart';
 import '../../providers/orders_provider.dart';
+import '../../widgets/app_text_field.dart';
 import '../../widgets/order_list_tile.dart';
 
-class TrackTab extends ConsumerWidget {
+class TrackTab extends ConsumerStatefulWidget {
   const TrackTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TrackTab> createState() => _TrackTabState();
+}
+
+class _TrackTabState extends ConsumerState<TrackTab> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Order> _filter(List<Order> list) {
+    if (_query.isEmpty) return list;
+    final query = _query.toLowerCase();
+    return list
+        .where(
+          (order) =>
+              order.trackingNumber.toLowerCase().contains(query) ||
+              (order.senderName?.toLowerCase().contains(query) ?? false) ||
+              (order.senderShopName?.toLowerCase().contains(query) ?? false),
+        )
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final orders = ref.watch(ordersProvider(OrderRoleFilter.received));
 
     return SafeArea(
@@ -27,35 +56,64 @@ class TrackTab extends ConsumerWidget {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: AppTextField(
+              controller: _searchController,
+              hint: 'Search by tracking number or sender',
+              prefix: Icon(
+                LucideIcons.search,
+                size: 18,
+                color: context.colors.textMuted,
+              ),
+              onChanged: (value) => setState(() => _query = value.trim()),
+            ),
+          ),
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () =>
-                  ref.read(ordersProvider(OrderRoleFilter.received).notifier).refresh(),
+              onRefresh: () => ref
+                  .read(ordersProvider(OrderRoleFilter.received).notifier)
+                  .refresh(),
               child: orders.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => _ErrorState(
-                  message: error is ApiException ? error.message : 'Something went wrong.',
-                  onRetry: () => ref.invalidate(ordersProvider(OrderRoleFilter.received)),
+                  message: error is ApiException
+                      ? error.message
+                      : 'Something went wrong.',
+                  onRetry: () =>
+                      ref.invalidate(ordersProvider(OrderRoleFilter.received)),
                 ),
-                data: (list) => list.isEmpty
-                    ? const _EmptyState(
-                        icon: LucideIcons.packageOpen,
-                        message: "You haven't received any shipments yet.",
-                      )
-                    : ListView.separated(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
-                        itemCount: list.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 10),
-                        itemBuilder: (context, index) {
-                          final order = list[index];
-                          return OrderListTile(
-                            order: order,
-                            counterpartyLabel: 'From',
-                            onTap: () => context.push('/orders/${order.id}'),
-                          );
-                        },
-                      ),
+                data: (list) {
+                  final filtered = _filter(list);
+                  if (filtered.isEmpty) {
+                    return _EmptyState(
+                      icon: _query.isNotEmpty
+                          ? LucideIcons.searchX
+                          : LucideIcons.packageOpen,
+                      message: _query.isNotEmpty
+                          ? "No shipments match '$_query'."
+                          : "You haven't received any shipments yet.",
+                    );
+                  }
+                  return ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final order = filtered[index];
+                      return OrderListTile(
+                        order: order,
+                        counterpartyName:
+                            order.senderName ??
+                            order.senderShopName ??
+                            'Unknown sender',
+                        counterpartyLabel: 'From',
+                        onTap: () => context.push('/orders/${order.id}'),
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ),
@@ -78,9 +136,13 @@ class _EmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 32),
       children: [
         const SizedBox(height: 100),
-        Icon(icon, size: 44, color: AppColors.muted),
+        Icon(icon, size: 44, color: context.colors.textMuted),
         const SizedBox(height: 12),
-        Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted)),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: context.colors.textMuted),
+        ),
       ],
     );
   }
@@ -99,12 +161,23 @@ class _ErrorState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 32),
       children: [
         const SizedBox(height: 80),
-        const Icon(LucideIcons.circleAlert, size: 40, color: AppColors.muted),
+        Icon(
+          LucideIcons.circleAlert,
+          size: 40,
+          color: context.colors.textMuted,
+        ),
         const SizedBox(height: 12),
-        Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted)),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: context.colors.textMuted),
+        ),
         const SizedBox(height: 16),
         Center(
-          child: OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
+          child: OutlinedButton(
+            onPressed: onRetry,
+            child: const Text('Try again'),
+          ),
         ),
       ],
     );
