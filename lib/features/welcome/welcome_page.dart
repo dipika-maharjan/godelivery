@@ -38,7 +38,9 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
     if (auth.isLoading) {
       return const Scaffold(
         backgroundColor: AppColors.primary,
-        body: Center(child: CircularProgressIndicator(color: AppColors.ink)),
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.onPrimary),
+        ),
       );
     }
 
@@ -62,9 +64,11 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             Expanded(
               child: Container(
                 width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                decoration: BoxDecoration(
+                  color: context.colors.card,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(32),
+                  ),
                 ),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
@@ -79,7 +83,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                       Text(
                         'Track a shipment, or sign in to send one.',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.muted,
+                          color: context.colors.textMuted,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -89,10 +93,10 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                             child: AppTextField(
                               controller: _trackingController,
                               hint: 'Enter tracking number',
-                              prefix: const Icon(
+                              prefix: Icon(
                                 LucideIcons.search,
                                 size: 18,
-                                color: AppColors.muted,
+                                color: context.colors.textMuted,
                               ),
                               textCapitalization: TextCapitalization.characters,
                               onChanged: (_) {},
@@ -153,9 +157,9 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                       Text(
                         'By continuing, you agree to our Terms of Service and Privacy Policy',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11.5,
-                          color: AppColors.muted,
+                          color: context.colors.textMuted,
                           height: 1.4,
                         ),
                       ),
@@ -189,7 +193,7 @@ class _PerkRow extends StatelessWidget {
               // color: AppColors.primary.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 17, color: AppColors.muted),
+            child: Icon(icon, size: 17, color: context.colors.textMuted),
           ),
           const SizedBox(width: 12),
           Expanded(child: Text(text, style: const TextStyle(fontSize: 13.5))),

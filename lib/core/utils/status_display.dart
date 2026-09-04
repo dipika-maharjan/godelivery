@@ -49,16 +49,8 @@ StatusDisplay statusDisplayFor(OrderStatus status) {
         LucideIcons.circleAlert,
       );
     case OrderStatus.cancelled:
-      return const StatusDisplay(
-        'Cancelled',
-        AppColors.muted,
-        LucideIcons.circleX,
-      );
+      return const StatusDisplay('Cancelled', Colors.grey, LucideIcons.circleX);
     case OrderStatus.returned:
-      return const StatusDisplay(
-        'Returned',
-        AppColors.muted,
-        LucideIcons.undo2,
-      );
+      return const StatusDisplay('Returned', Colors.grey, LucideIcons.undo2);
   }
 }

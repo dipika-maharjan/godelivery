@@ -90,7 +90,9 @@ class _PersonalDetailsPageState extends ConsumerState<PersonalDetailsPage> {
           ? e.message
           : 'Could not complete signup. Please try again.';
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -110,9 +112,9 @@ class _PersonalDetailsPageState extends ConsumerState<PersonalDetailsPage> {
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               "We'll use this to set up your account.",
-              style: TextStyle(color: AppColors.muted, fontSize: 13.5),
+              style: TextStyle(color: context.colors.textMuted, fontSize: 13.5),
             ),
             const SizedBox(height: 24),
             AppTextField(
@@ -140,7 +142,9 @@ class _PersonalDetailsPageState extends ConsumerState<PersonalDetailsPage> {
             const SizedBox(height: 16),
             Text(
               'Shop location',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 13),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontSize: 13),
             ),
             const SizedBox(height: 6),
             InkWell(
@@ -150,7 +154,7 @@ class _PersonalDetailsPageState extends ConsumerState<PersonalDetailsPage> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
+                  color: context.colors.cardAlt,
                   borderRadius: BorderRadius.circular(14),
                   border: _pickedLocation != null
                       ? Border.all(color: AppColors.primary, width: 1.5)
@@ -158,7 +162,11 @@ class _PersonalDetailsPageState extends ConsumerState<PersonalDetailsPage> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(LucideIcons.mapPin, size: 18, color: AppColors.ink),
+                    Icon(
+                      LucideIcons.mapPin,
+                      size: 18,
+                      color: context.colors.text,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -170,15 +178,15 @@ class _PersonalDetailsPageState extends ConsumerState<PersonalDetailsPage> {
                         style: TextStyle(
                           fontSize: 13.5,
                           color: _pickedLocation != null
-                              ? AppColors.ink
-                              : AppColors.muted,
+                              ? context.colors.text
+                              : context.colors.textMuted,
                         ),
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       LucideIcons.chevronRight,
                       size: 18,
-                      color: AppColors.muted,
+                      color: context.colors.textMuted,
                     ),
                   ],
                 ),

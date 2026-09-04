@@ -4,7 +4,10 @@ class Coordinates {
   final double latitude;
   final double longitude;
 
-  Map<String, dynamic> toJson() => {'latitude': latitude, 'longitude': longitude};
+  Map<String, dynamic> toJson() => {
+    'latitude': latitude,
+    'longitude': longitude,
+  };
 }
 
 class EstimateRequest {

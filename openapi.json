@@ -168,6 +168,248 @@
         ]
       }
     },
+    "/notifications": {
+      "get": {
+        "operationId": "NotificationsController_findMany",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "unreadOnly",
+            "required": false,
+            "in": "query",
+            "description": "Only return unread notifications",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NotificationResponseDto"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMetaDto"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List the signed-in user's notifications",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/notifications/unread-count": {
+      "get": {
+        "operationId": "NotificationsController_unreadCount",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Count of unread notifications — poll this for a badge count",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/notifications/{id}/read": {
+      "patch": {
+        "operationId": "NotificationsController_markRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Mark one notification as read",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/notifications/read-all": {
+      "post": {
+        "operationId": "NotificationsController_markAllRead",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Mark every notification as read",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/users": {
+      "get": {
+        "operationId": "UsersController_listAll",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "CUSTOMER",
+                "RIDER",
+                "ADMIN"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Matches against name, phone number, email, or shop name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AdminUserResponseDto"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMetaDto"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List every account on the platform, with order/delivery counts (admin)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/users/me": {
       "get": {
         "operationId": "UsersController_getMe",
@@ -263,6 +505,42 @@
           }
         ],
         "summary": "Look up a phone number before creating an order",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "operationId": "UsersController_getOneAdmin",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserDetailResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get full detail for one account — profile, counts, and recent order history (admin)",
         "tags": [
           "users"
         ]
@@ -888,162 +1166,6 @@
         ]
       }
     },
-    "/notifications": {
-      "get": {
-        "operationId": "NotificationsController_findMany",
-        "parameters": [
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "default": 1,
-              "type": "number"
-            }
-          },
-          {
-            "name": "pageSize",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "type": "number"
-            }
-          },
-          {
-            "name": "unreadOnly",
-            "required": false,
-            "in": "query",
-            "description": "Only return unread notifications",
-            "schema": {
-              "type": "boolean"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "data",
-                    "meta"
-                  ],
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/NotificationResponseDto"
-                      }
-                    },
-                    "meta": {
-                      "$ref": "#/components/schemas/PaginationMetaDto"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "access-token": []
-          }
-        ],
-        "summary": "List the signed-in user's notifications",
-        "tags": [
-          "notifications"
-        ]
-      }
-    },
-    "/notifications/unread-count": {
-      "get": {
-        "operationId": "NotificationsController_unreadCount",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UnreadCountResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "access-token": []
-          }
-        ],
-        "summary": "Count of unread notifications — poll this for a badge count",
-        "tags": [
-          "notifications"
-        ]
-      }
-    },
-    "/notifications/{id}/read": {
-      "patch": {
-        "operationId": "NotificationsController_markRead",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotificationResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "access-token": []
-          }
-        ],
-        "summary": "Mark one notification as read",
-        "tags": [
-          "notifications"
-        ]
-      }
-    },
-    "/notifications/read-all": {
-      "post": {
-        "operationId": "NotificationsController_markAllRead",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "access-token": []
-          }
-        ],
-        "summary": "Mark every notification as read",
-        "tags": [
-          "notifications"
-        ]
-      }
-    },
     "/orders": {
       "post": {
         "description": "Usable by a signed-in shop account or a 3rd-party integration authenticated with an API key.",
@@ -1135,6 +1257,7 @@
                 "PICKED_UP",
                 "IN_TRANSIT",
                 "OUT_FOR_DELIVERY",
+                "DELIVERED_PENDING_VERIFICATION",
                 "DELIVERED",
                 "FAILED_DELIVERY",
                 "CANCELLED",
@@ -1236,6 +1359,7 @@
                 "PICKED_UP",
                 "IN_TRANSIT",
                 "OUT_FOR_DELIVERY",
+                "DELIVERED_PENDING_VERIFICATION",
                 "DELIVERED",
                 "FAILED_DELIVERY",
                 "CANCELLED",
@@ -1353,9 +1477,49 @@
         ]
       }
     },
+    "/orders/{id}/invoice": {
+      "get": {
+        "description": "The invoice is generated and stored in MinIO on order creation; this generates and stores it on demand if that hasn't happened yet.",
+        "operationId": "OrdersController_getInvoiceUrl",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api-key": []
+          },
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get a temporary presigned URL to download the order invoice PDF",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
     "/orders/{id}/status": {
       "patch": {
-        "description": "Admins can set any status; a rider may only update an order assigned to them, and only to a delivery-progress status (picked up, in transit, out for delivery, delivered, failed).",
+        "description": "Admins can set any status except DELIVERED, which can only be reached via the two-party verify-delivery flow; a rider may only update an order assigned to them, and only to a delivery-progress status (picked up, in transit, out for delivery, delivered-pending-verification, failed).",
         "operationId": "OrdersController_updateStatus",
         "parameters": [
           {
@@ -1395,6 +1559,127 @@
           }
         ],
         "summary": "Append a new status/progress event to an order",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/orders/{id}/verify-delivery": {
+      "post": {
+        "description": "One of the two sign-offs (receiver + admin) required to move an order from DELIVERED_PENDING_VERIFICATION to DELIVERED. Only the receiver on the order may call this.",
+        "operationId": "OrdersController_verifyDeliveryByReceiver",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyDeliveryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Receiver confirms they received the delivery, with a captured signature",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/orders/{id}/verify-delivery/admin": {
+      "post": {
+        "description": "The other of the two sign-offs (receiver + admin) required to move an order from DELIVERED_PENDING_VERIFICATION to DELIVERED.",
+        "operationId": "OrdersController_verifyDeliveryByAdmin",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Admin verifies the delivery",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/orders/{id}/collect-payment": {
+      "post": {
+        "description": "For cash-on-delivery orders only — the rider (or admin) confirms they collected the amount from the payer in person. Other payment methods are not settled through this endpoint yet.",
+        "operationId": "OrdersController_collectCodPayment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Record a COD payment as collected",
         "tags": [
           "orders"
         ]
@@ -2344,6 +2629,95 @@
           }
         }
       },
+      "PaginationMetaDto": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          },
+          "totalPages": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "total",
+          "totalPages"
+        ]
+      },
+      "NotificationResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ORDER_CREATED",
+              "ORDER_STATUS_CHANGED",
+              "ORDER_ASSIGNED",
+              "ORDER_UNASSIGNED",
+              "ORDER_CANCELLED",
+              "NEW_ORDER_AVAILABLE",
+              "USER_SIGNED_UP",
+              "GENERIC"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "nullable": true
+          },
+          "orderId": {
+            "type": "string",
+            "nullable": true
+          },
+          "readAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "type",
+          "title",
+          "body",
+          "createdAt"
+        ]
+      },
+      "UnreadCountResponseDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "count"
+        ]
+      },
       "LocationResponseDto": {
         "type": "object",
         "properties": {
@@ -2385,6 +2759,125 @@
           "addressLine",
           "latitude",
           "longitude"
+        ]
+      },
+      "AdminRiderProfileSummaryDto": {
+        "type": "object",
+        "properties": {
+          "isActive": {
+            "type": "boolean"
+          },
+          "isAvailable": {
+            "type": "boolean"
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "ON_FOOT",
+              "BICYCLE",
+              "MOTORBIKE",
+              "CAR",
+              "VAN",
+              "TRUCK"
+            ]
+          },
+          "vehiclePlateNumber": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "isActive",
+          "isAvailable",
+          "vehicleType"
+        ]
+      },
+      "AdminUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": "string"
+          },
+          "phoneVerifiedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "CUSTOMER",
+              "RIDER",
+              "ADMIN"
+            ]
+          },
+          "shopName": {
+            "type": "string",
+            "nullable": true
+          },
+          "shopLocationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "shopLocation": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LocationResponseDto"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "sentOrdersCount": {
+            "type": "number",
+            "description": "Orders placed by this account as a sender"
+          },
+          "receivedOrdersCount": {
+            "type": "number",
+            "description": "Orders addressed to this account as a receiver"
+          },
+          "riderOrdersCount": {
+            "type": "number",
+            "description": "Orders delivered by this account as a rider"
+          },
+          "riderProfile": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminRiderProfileSummaryDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "phoneNumber",
+          "name",
+          "role",
+          "createdAt",
+          "updatedAt",
+          "sentOrdersCount",
+          "receivedOrdersCount",
+          "riderOrdersCount"
         ]
       },
       "UserResponseDto": {
@@ -2534,6 +3027,140 @@
           "exists"
         ]
       },
+      "AdminUserOrderSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "trackingNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "trackingNumber",
+          "status",
+          "amount",
+          "currency",
+          "createdAt"
+        ]
+      },
+      "AdminUserDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": "string"
+          },
+          "phoneVerifiedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "CUSTOMER",
+              "RIDER",
+              "ADMIN"
+            ]
+          },
+          "shopName": {
+            "type": "string",
+            "nullable": true
+          },
+          "shopLocationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "shopLocation": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LocationResponseDto"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "sentOrdersCount": {
+            "type": "number",
+            "description": "Orders placed by this account as a sender"
+          },
+          "receivedOrdersCount": {
+            "type": "number",
+            "description": "Orders addressed to this account as a receiver"
+          },
+          "riderOrdersCount": {
+            "type": "number",
+            "description": "Orders delivered by this account as a rider"
+          },
+          "riderProfile": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminRiderProfileSummaryDto"
+              }
+            ]
+          },
+          "recentSentOrders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUserOrderSummaryDto"
+            }
+          },
+          "recentReceivedOrders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUserOrderSummaryDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "phoneNumber",
+          "name",
+          "role",
+          "createdAt",
+          "updatedAt",
+          "sentOrdersCount",
+          "receivedOrdersCount",
+          "riderOrdersCount",
+          "recentSentOrders",
+          "recentReceivedOrders"
+        ]
+      },
       "OnboardRiderDto": {
         "type": "object",
         "properties": {
@@ -2641,29 +3268,6 @@
           "isAvailable",
           "isActive",
           "createdAt"
-        ]
-      },
-      "PaginationMetaDto": {
-        "type": "object",
-        "properties": {
-          "page": {
-            "type": "number"
-          },
-          "pageSize": {
-            "type": "number"
-          },
-          "total": {
-            "type": "number"
-          },
-          "totalPages": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "page",
-          "pageSize",
-          "total",
-          "totalPages"
         ]
       },
       "UpdateRiderProfileDto": {
@@ -3046,71 +3650,6 @@
           }
         }
       },
-      "NotificationResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "userId": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "ORDER_CREATED",
-              "ORDER_STATUS_CHANGED",
-              "ORDER_ASSIGNED",
-              "ORDER_UNASSIGNED",
-              "ORDER_CANCELLED",
-              "NEW_ORDER_AVAILABLE",
-              "GENERIC"
-            ]
-          },
-          "title": {
-            "type": "string"
-          },
-          "body": {
-            "type": "string"
-          },
-          "data": {
-            "type": "object",
-            "nullable": true
-          },
-          "orderId": {
-            "type": "string",
-            "nullable": true
-          },
-          "readAt": {
-            "format": "date-time",
-            "type": "string",
-            "nullable": true
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "userId",
-          "type",
-          "title",
-          "body",
-          "createdAt"
-        ]
-      },
-      "UnreadCountResponseDto": {
-        "type": "object",
-        "properties": {
-          "count": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "count"
-        ]
-      },
       "ReceiverInputDto": {
         "type": "object",
         "properties": {
@@ -3166,6 +3705,28 @@
           "senderName": {
             "type": "string",
             "description": "Overrides the sender's account name for this shipment only"
+          },
+          "payer": {
+            "type": "string",
+            "enum": [
+              "SENDER",
+              "RECEIVER"
+            ],
+            "default": "SENDER",
+            "description": "Who owes the delivery charge"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "COD",
+              "BANK_TRANSFER",
+              "ESEWA",
+              "KHALTI",
+              "FONEPAY",
+              "CONNECTIPS"
+            ],
+            "default": "COD",
+            "description": "Only COD actually settles today — other methods just tag the order for now (see PaymentMethod)."
           },
           "pickupLocation": {
             "description": "Pickup point for this order. Defaults to the sender's registered shop location.",
@@ -3280,6 +3841,7 @@
               "PICKED_UP",
               "IN_TRANSIT",
               "OUT_FOR_DELIVERY",
+              "DELIVERED_PENDING_VERIFICATION",
               "DELIVERED",
               "FAILED_DELIVERY",
               "CANCELLED",
@@ -3322,6 +3884,17 @@
             "type": "string"
           },
           "senderName": {
+            "type": "string",
+            "nullable": true
+          },
+          "senderPhoneNumber": {
+            "type": "string"
+          },
+          "senderEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "senderShopName": {
             "type": "string",
             "nullable": true
           },
@@ -3373,6 +3946,37 @@
           "currency": {
             "type": "string"
           },
+          "payer": {
+            "type": "string",
+            "enum": [
+              "SENDER",
+              "RECEIVER"
+            ]
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "COD",
+              "BANK_TRANSFER",
+              "ESEWA",
+              "KHALTI",
+              "FONEPAY",
+              "CONNECTIPS"
+            ]
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PAID",
+              "FAILED"
+            ]
+          },
+          "paidAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -3381,6 +3985,7 @@
               "PICKED_UP",
               "IN_TRANSIT",
               "OUT_FOR_DELIVERY",
+              "DELIVERED_PENDING_VERIFICATION",
               "DELIVERED",
               "FAILED_DELIVERY",
               "CANCELLED",
@@ -3395,6 +4000,20 @@
               "API",
               "ADMIN"
             ]
+          },
+          "receiverVerifiedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "adminVerifiedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "receiverSignatureUrl": {
+            "type": "string",
+            "nullable": true
           },
           "packages": {
             "type": "array",
@@ -3421,6 +4040,7 @@
           "id",
           "trackingNumber",
           "senderId",
+          "senderPhoneNumber",
           "receiverId",
           "receiverName",
           "receiverPhoneNumber",
@@ -3431,6 +4051,9 @@
           "hasDangerousGoods",
           "amount",
           "currency",
+          "payer",
+          "paymentMethod",
+          "paymentStatus",
           "status",
           "source",
           "packages",
@@ -3453,6 +4076,7 @@
               "PICKED_UP",
               "IN_TRANSIT",
               "OUT_FOR_DELIVERY",
+              "DELIVERED_PENDING_VERIFICATION",
               "DELIVERED",
               "FAILED_DELIVERY",
               "CANCELLED",
@@ -3497,6 +4121,21 @@
           "updatedAt"
         ]
       },
+      "DownloadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "expiresInSeconds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "url",
+          "expiresInSeconds"
+        ]
+      },
       "UpdateOrderStatusDto": {
         "type": "object",
         "properties": {
@@ -3508,6 +4147,7 @@
               "PICKED_UP",
               "IN_TRANSIT",
               "OUT_FOR_DELIVERY",
+              "DELIVERED_PENDING_VERIFICATION",
               "DELIVERED",
               "FAILED_DELIVERY",
               "CANCELLED",
@@ -3529,6 +4169,19 @@
         "required": [
           "status",
           "title"
+        ]
+      },
+      "VerifyDeliveryDto": {
+        "type": "object",
+        "properties": {
+          "signature": {
+            "type": "string",
+            "description": "Receiver's captured signature, as a PNG data URL (proof of receipt alongside the confirmation click).",
+            "example": "data:image/png;base64,iVBORw0KGgo..."
+          }
+        },
+        "required": [
+          "signature"
         ]
       },
       "AssignRiderDto": {
@@ -3597,21 +4250,6 @@
           "uploadUrl",
           "bucket",
           "objectKey",
-          "expiresInSeconds"
-        ]
-      },
-      "DownloadUrlResponseDto": {
-        "type": "object",
-        "properties": {
-          "url": {
-            "type": "string"
-          },
-          "expiresInSeconds": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "url",
           "expiresInSeconds"
         ]
       },

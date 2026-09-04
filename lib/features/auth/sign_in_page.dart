@@ -40,9 +40,13 @@ class _SignInPageState extends ConsumerState<SignInPage> {
       if (!mounted) return;
       context.push('/sign-in/otp', extra: phoneNumber);
     } catch (e) {
-      final message = e is ApiException ? e.message : 'Could not send the code.';
+      final message = e is ApiException
+          ? e.message
+          : 'Could not send the code.';
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -59,9 +63,9 @@ class _SignInPageState extends ConsumerState<SignInPage> {
           children: [
             Text('Sign in', style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               "We'll text you a one-time code to verify your number.",
-              style: TextStyle(color: AppColors.muted, fontSize: 13.5),
+              style: TextStyle(color: context.colors.textMuted, fontSize: 13.5),
             ),
             const SizedBox(height: 28),
             AppTextField(
@@ -80,18 +84,18 @@ class _SignInPageState extends ConsumerState<SignInPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     Text(
                       _kCountryCode,
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
+                        color: context.colors.text,
                       ),
                     ),
-                    SizedBox(width: 6),
+                    const SizedBox(width: 6),
                     SizedBox(
                       height: 18,
-                      child: VerticalDivider(color: AppColors.border),
+                      child: VerticalDivider(color: context.colors.border),
                     ),
                   ],
                 ),

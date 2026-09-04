@@ -42,14 +42,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/welcome', builder: (context, state) => const WelcomePage()),
+      GoRoute(
+        path: '/welcome',
+        builder: (context, state) => const WelcomePage(),
+      ),
       GoRoute(
         path: '/track/:trackingNumber',
         builder: (context, state) => TrackResultPage(
           trackingNumber: state.pathParameters['trackingNumber']!,
         ),
       ),
-      GoRoute(path: '/sign-in', builder: (context, state) => const SignInPage()),
+      GoRoute(
+        path: '/sign-in',
+        builder: (context, state) => const SignInPage(),
+      ),
       GoRoute(
         path: '/sign-in/otp',
         builder: (context, state) =>

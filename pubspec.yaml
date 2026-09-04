@@ -40,17 +40,23 @@ dependencies:
   go_router: ^14.6.2
   lucide_icons_flutter: ^3.1.17
   flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.0
   galli_maps_package: ^1.0.1
   intl: ^0.19.0
   firebase_core: ^4.14.0
   firebase_messaging: ^16.6.0
+  flutter_local_notifications: ^18.0.1
   uuid: ^4.6.0
   flutter_launcher_icons: ^0.14.4
+  image_picker: ^1.1.2
+  url_launcher: ^6.3.0
+  package_info_plus: ^8.1.0
 
 flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icon/icon.png"
+  android_path: "assets/icon/android.png"
 
 dev_dependencies:
   flutter_test:

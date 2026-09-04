@@ -44,7 +44,11 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(LucideIcons.packageX, size: 44, color: AppColors.muted),
+            Icon(
+              LucideIcons.packageX,
+              size: 44,
+              color: context.colors.textMuted,
+            ),
             const SizedBox(height: 12),
             const Text(
               "We couldn't find a shipment with that tracking number.",
@@ -73,7 +77,7 @@ class _TrackingBody extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFFF8F8F8),
+            color: context.colors.card,
             borderRadius: BorderRadius.circular(18),
           ),
           child: Column(
@@ -97,7 +101,7 @@ class _TrackingBody extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 'To ${tracking.receiverName}',
-                style: const TextStyle(color: AppColors.muted, fontSize: 13),
+                style: TextStyle(color: context.colors.textMuted, fontSize: 13),
               ),
             ],
           ),
@@ -110,17 +114,17 @@ class _TrackingBody extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   LucideIcons.package,
                   size: 16,
-                  color: AppColors.muted,
+                  color: context.colors.textMuted,
                 ),
                 const SizedBox(width: 8),
                 Expanded(child: Text(p.name)),
                 Text(
                   '${p.weightKg} kg',
-                  style: const TextStyle(
-                    color: AppColors.muted,
+                  style: TextStyle(
+                    color: context.colors.textMuted,
                     fontSize: 12.5,
                   ),
                 ),
@@ -170,17 +174,19 @@ class _TimelineTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isCurrent
                       ? display.color.withValues(alpha: 0.16)
-                      : const Color(0xFFF0F0F0),
+                      : context.colors.cardAlt,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   display.icon,
                   size: 15,
-                  color: isCurrent ? display.color : AppColors.muted,
+                  color: isCurrent ? display.color : context.colors.textMuted,
                 ),
               ),
               if (!isLast)
-                Expanded(child: Container(width: 2, color: AppColors.border)),
+                Expanded(
+                  child: Container(width: 2, color: context.colors.border),
+                ),
             ],
           ),
           const SizedBox(width: 12),
@@ -201,18 +207,18 @@ class _TimelineTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       event.description!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12.5,
-                        color: AppColors.muted,
+                        color: context.colors.textMuted,
                       ),
                     ),
                   ],
                   const SizedBox(height: 3),
                   Text(
                     DateFormat('MMM d, h:mm a').format(event.createdAt),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11.5,
-                      color: AppColors.muted,
+                      color: context.colors.textMuted,
                     ),
                   ),
                 ],
