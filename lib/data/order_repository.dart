@@ -99,6 +99,7 @@ class OrderRepository {
     required List<PackageDraft> packages,
     OrderPayer payer = OrderPayer.sender,
     PaymentMethod paymentMethod = PaymentMethod.cod,
+    double? codAmount,
   }) async {
     try {
       final response = await _dio.post(
@@ -107,6 +108,7 @@ class OrderRepository {
           if (senderName != null) 'senderName': senderName,
           'payer': orderPayerToJson(payer),
           'paymentMethod': paymentMethodToJson(paymentMethod),
+          if (codAmount != null) 'codAmount': codAmount,
           if (pickupLocation != null) 'pickupLocation': pickupLocation.toJson(),
           'receiver': {
             'name': receiverName,

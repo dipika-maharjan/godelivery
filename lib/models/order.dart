@@ -5,7 +5,9 @@ enum OrderStatus {
   confirmed,
   pickedUp,
   inTransit,
+  atWarehouse,
   outForDelivery,
+  deliveredPendingVerification,
   delivered,
   failedDelivery,
   cancelled,
@@ -20,8 +22,12 @@ OrderStatus orderStatusFromJson(String value) {
       return OrderStatus.pickedUp;
     case 'IN_TRANSIT':
       return OrderStatus.inTransit;
+    case 'AT_WAREHOUSE':
+      return OrderStatus.atWarehouse;
     case 'OUT_FOR_DELIVERY':
       return OrderStatus.outForDelivery;
+    case 'DELIVERED_PENDING_VERIFICATION':
+      return OrderStatus.deliveredPendingVerification;
     case 'DELIVERED':
       return OrderStatus.delivered;
     case 'FAILED_DELIVERY':
@@ -177,6 +183,32 @@ class OrderRider {
   final String phoneNumber;
 }
 
+class OrderWarehouse {
+  const OrderWarehouse({
+    required this.id,
+    required this.name,
+    required this.addressLine,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  factory OrderWarehouse.fromJson(Map<String, dynamic> json) {
+    return OrderWarehouse(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      addressLine: json['addressLine'] as String,
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
+    );
+  }
+
+  final String id;
+  final String name;
+  final String addressLine;
+  final double latitude;
+  final double longitude;
+}
+
 class Order {
   const Order({
     required this.id,
@@ -190,8 +222,14 @@ class Order {
     required this.receiverName,
     required this.receiverPhoneNumber,
     this.receiverEmail,
-    this.rider,
-    this.riderAssignedAt,
+    this.pickupRider,
+    this.pickupRiderAssignedAt,
+    this.pickupRiderClaimRequestedAt,
+    this.warehouse,
+    this.warehouseArrivedAt,
+    this.deliveryRider,
+    this.deliveryRiderAssignedAt,
+    this.deliveryRiderClaimRequestedAt,
     required this.pickupLocation,
     required this.deliveryLocation,
     required this.distanceKm,
@@ -203,6 +241,8 @@ class Order {
     required this.paymentMethod,
     required this.paymentStatus,
     this.paidAt,
+    this.codAmount,
+    this.codCollectedAt,
     required this.status,
     required this.packages,
     required this.trackingEvents,
@@ -223,12 +263,31 @@ class Order {
       receiverName: json['receiverName'] as String,
       receiverPhoneNumber: json['receiverPhoneNumber'] as String,
       receiverEmail: json['receiverEmail'] as String?,
-      rider: json['rider'] == null
+      pickupRider: json['pickupRider'] == null
           ? null
-          : OrderRider.fromJson(json['rider'] as Map<String, dynamic>),
-      riderAssignedAt: json['riderAssignedAt'] == null
+          : OrderRider.fromJson(json['pickupRider'] as Map<String, dynamic>),
+      pickupRiderAssignedAt: json['pickupRiderAssignedAt'] == null
           ? null
-          : DateTime.parse(json['riderAssignedAt'] as String),
+          : DateTime.parse(json['pickupRiderAssignedAt'] as String),
+      pickupRiderClaimRequestedAt: json['pickupRiderClaimRequestedAt'] == null
+          ? null
+          : DateTime.parse(json['pickupRiderClaimRequestedAt'] as String),
+      warehouse: json['warehouse'] == null
+          ? null
+          : OrderWarehouse.fromJson(json['warehouse'] as Map<String, dynamic>),
+      warehouseArrivedAt: json['warehouseArrivedAt'] == null
+          ? null
+          : DateTime.parse(json['warehouseArrivedAt'] as String),
+      deliveryRider: json['deliveryRider'] == null
+          ? null
+          : OrderRider.fromJson(json['deliveryRider'] as Map<String, dynamic>),
+      deliveryRiderAssignedAt: json['deliveryRiderAssignedAt'] == null
+          ? null
+          : DateTime.parse(json['deliveryRiderAssignedAt'] as String),
+      deliveryRiderClaimRequestedAt:
+          json['deliveryRiderClaimRequestedAt'] == null
+          ? null
+          : DateTime.parse(json['deliveryRiderClaimRequestedAt'] as String),
       pickupLocation: LocationResponse.fromJson(
         json['pickupLocation'] as Map<String, dynamic>,
       ),
@@ -246,6 +305,10 @@ class Order {
       paidAt: json['paidAt'] == null
           ? null
           : DateTime.parse(json['paidAt'] as String),
+      codAmount: json['codAmount'] as String?,
+      codCollectedAt: json['codCollectedAt'] == null
+          ? null
+          : DateTime.parse(json['codCollectedAt'] as String),
       status: orderStatusFromJson(json['status'] as String),
       packages: (json['packages'] as List)
           .map((e) => OrderPackage.fromJson(e as Map<String, dynamic>))
@@ -269,8 +332,14 @@ class Order {
   final String receiverName;
   final String receiverPhoneNumber;
   final String? receiverEmail;
-  final OrderRider? rider;
-  final DateTime? riderAssignedAt;
+  final OrderRider? pickupRider;
+  final DateTime? pickupRiderAssignedAt;
+  final DateTime? pickupRiderClaimRequestedAt;
+  final OrderWarehouse? warehouse;
+  final DateTime? warehouseArrivedAt;
+  final OrderRider? deliveryRider;
+  final DateTime? deliveryRiderAssignedAt;
+  final DateTime? deliveryRiderClaimRequestedAt;
   final LocationResponse pickupLocation;
   final LocationResponse deliveryLocation;
   final double distanceKm;
@@ -282,6 +351,8 @@ class Order {
   final PaymentMethod paymentMethod;
   final PaymentStatus paymentStatus;
   final DateTime? paidAt;
+  final String? codAmount;
+  final DateTime? codCollectedAt;
   final OrderStatus status;
   final List<OrderPackage> packages;
   final List<OrderTrackingEvent> trackingEvents;

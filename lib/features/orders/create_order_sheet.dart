@@ -58,6 +58,7 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
   final _phoneController = TextEditingController();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _codAmountController = TextEditingController();
   final List<_PackageDraftControllers> _packages = [_PackageDraftControllers()];
 
   GalliPickedLocation? _deliveryLocation;
@@ -75,6 +76,7 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
     _phoneController.dispose();
     _nameController.dispose();
     _emailController.dispose();
+    _codAmountController.dispose();
     for (final p in _packages) {
       p.dispose();
     }
@@ -232,6 +234,9 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
                 .toList(),
             payer: _payer,
             paymentMethod: _paymentMethod,
+            codAmount: _codAmountController.text.trim().isEmpty
+                ? null
+                : double.tryParse(_codAmountController.text.trim()),
           );
       ref.invalidate(ordersProvider(OrderRoleFilter.sent));
       if (!mounted) return;
@@ -446,6 +451,17 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
                         method: _paymentMethod,
                         onChanged: (method) =>
                             setState(() => _paymentMethod = method),
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        controller: _codAmountController,
+                        label: 'Cash to collect from receiver (optional)',
+                        hint: 'e.g. 2500',
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        helperText:
+                            'For the goods themselves — separate from the delivery charge',
                       ),
                       const SizedBox(height: 24),
                       PrimaryButton(
