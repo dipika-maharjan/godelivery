@@ -49,10 +49,17 @@ class _OrderDetailBody extends ConsumerStatefulWidget {
 class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
   bool _cancelling = false;
 
+  static const _terminalStatuses = {
+    OrderStatus.delivered,
+    OrderStatus.failedDelivery,
+    OrderStatus.cancelled,
+    OrderStatus.returned,
+  };
+
   bool _canCancel(String? currentUserId) =>
       widget.order.senderId == currentUserId &&
-      (widget.order.status == OrderStatus.pending ||
-          widget.order.status == OrderStatus.confirmed);
+      widget.order.pickupRiderAssignedAt == null &&
+      !_terminalStatuses.contains(widget.order.status);
 
   Future<void> _cancel() async {
     setState(() => _cancelling = true);
@@ -122,12 +129,30 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
           label: 'Delivery to ${order.receiverName}',
           address: order.deliveryLocation.addressLine,
         ),
-        if (order.rider != null) ...[
+        if (order.pickupRider != null) ...[
           const SizedBox(height: 10),
           _AddressCard(
             icon: LucideIcons.bike,
-            label: 'Rider',
-            address: '${order.rider!.name} · ${order.rider!.phoneNumber}',
+            label: 'Pickup rider',
+            address:
+                '${order.pickupRider!.name} · ${order.pickupRider!.phoneNumber}',
+          ),
+        ],
+        if (order.warehouse != null && order.warehouseArrivedAt != null) ...[
+          const SizedBox(height: 10),
+          _AddressCard(
+            icon: LucideIcons.warehouse,
+            label: 'At warehouse',
+            address: order.warehouse!.name,
+          ),
+        ],
+        if (order.deliveryRider != null) ...[
+          const SizedBox(height: 10),
+          _AddressCard(
+            icon: LucideIcons.bike,
+            label: 'Delivery rider',
+            address:
+                '${order.deliveryRider!.name} · ${order.deliveryRider!.phoneNumber}',
           ),
         ],
         const SizedBox(height: 24),
@@ -214,6 +239,13 @@ class _PaymentSummary extends StatelessWidget {
           color: status.color,
           background: status.color.withValues(alpha: 0.12),
         ),
+        if (order.codAmount != null)
+          _PaymentPill(
+            icon: LucideIcons.banknote,
+            label: 'Collect ${order.codAmount} ${order.currency}',
+            color: context.colors.text,
+            background: context.colors.cardAlt,
+          ),
       ],
     );
   }

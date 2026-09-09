@@ -544,6 +544,51 @@
         "tags": [
           "users"
         ]
+      },
+      "patch": {
+        "description": "Same fields as PATCH /users/me — name, email, shop name/location. Role and rider-specific fields (vehicle, active/suspended) are not editable here; see PATCH /riders/:id for the latter.",
+        "operationId": "UsersController_updateOneAdmin",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Update another account's profile / shop details (admin)",
+        "tags": [
+          "users"
+        ]
       }
     },
     "/riders": {
@@ -1166,6 +1211,146 @@
         ]
       }
     },
+    "/warehouses": {
+      "get": {
+        "operationId": "WarehousesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WarehouseResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List all warehouses (admin)",
+        "tags": [
+          "warehouses"
+        ]
+      },
+      "post": {
+        "operationId": "WarehousesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWarehouseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarehouseResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Create a new warehouse (admin)",
+        "tags": [
+          "warehouses"
+        ]
+      }
+    },
+    "/warehouses/{id}": {
+      "patch": {
+        "description": "Deactivating takes it out of nearest-warehouse routing for new orders — in-flight orders already assigned to it are unaffected.",
+        "operationId": "WarehousesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWarehouseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarehouseResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Update a warehouse — name, location, and/or active status (admin)",
+        "tags": [
+          "warehouses"
+        ]
+      },
+      "delete": {
+        "description": "Safe at any time — orders that reference this warehouse keep their history and just show no warehouse for that field going forward. Prefer deactivating over deleting if you might reuse it.",
+        "operationId": "WarehousesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Delete a warehouse (admin)",
+        "tags": [
+          "warehouses"
+        ]
+      }
+    },
     "/orders": {
       "post": {
         "description": "Usable by a signed-in shop account or a 3rd-party integration authenticated with an API key.",
@@ -1256,6 +1441,7 @@
                 "CONFIRMED",
                 "PICKED_UP",
                 "IN_TRANSIT",
+                "AT_WAREHOUSE",
                 "OUT_FOR_DELIVERY",
                 "DELIVERED_PENDING_VERIFICATION",
                 "DELIVERED",
@@ -1309,6 +1495,7 @@
     },
     "/orders/available": {
       "get": {
+        "description": "Pickup tasks are sorted by distance to the sender; delivery tasks (which only exist once a pickup rider has dropped the parcel at a warehouse) are sorted by distance to that warehouse — see AvailableOrdersQueryDto.leg.",
         "operationId": "OrdersController_findAvailable",
         "parameters": [
           {
@@ -1333,37 +1520,15 @@
             }
           },
           {
-            "name": "role",
-            "required": false,
+            "name": "leg",
+            "required": true,
             "in": "query",
-            "schema": {
-              "default": "all",
-              "type": "string",
-              "enum": [
-                "sent",
-                "received",
-                "assigned",
-                "all"
-              ]
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
+            "description": "PICKUP: unclaimed orders waiting to be collected from the sender. DELIVERY: orders staged at a warehouse waiting to be collected for delivery to the receiver.",
             "schema": {
               "type": "string",
               "enum": [
-                "PENDING",
-                "CONFIRMED",
-                "PICKED_UP",
-                "IN_TRANSIT",
-                "OUT_FOR_DELIVERY",
-                "DELIVERED_PENDING_VERIFICATION",
-                "DELIVERED",
-                "FAILED_DELIVERY",
-                "CANCELLED",
-                "RETURNED"
+                "PICKUP",
+                "DELIVERY"
               ]
             }
           }
@@ -1400,7 +1565,23 @@
             "access-token": []
           }
         ],
-        "summary": "List unclaimed orders a rider can take, nearest-first when the rider has a known location",
+        "summary": "List unclaimed pickup or delivery tasks a rider can take, nearest-first when the rider has a known location",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/orders/test-pdf": {
+      "get": {
+        "description": "No auth, no database read, no real order — a new random tracking number every call. Purely for eyeballing/testing the invoice layout.",
+        "operationId": "OrdersController_getSamplePdf",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Preview the invoice PDF design against synthetic sample data",
         "tags": [
           "orders"
         ]
@@ -1475,6 +1656,51 @@
         "tags": [
           "orders"
         ]
+      },
+      "patch": {
+        "description": "Edits packages in place by id — doesn't add or remove them. Changing a package's weight/dangerous flag, or the delivery address, re-runs pricing so the charged amount stays accurate.",
+        "operationId": "OrdersController_adminUpdate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Edit receiver details, delivery address, and/or existing packages (admin)",
+        "tags": [
+          "orders"
+        ]
       }
     },
     "/orders/{id}/invoice": {
@@ -1517,9 +1743,42 @@
         ]
       }
     },
+    "/orders/{id}/invoice/pdf": {
+      "get": {
+        "description": "Renders on demand and streams the bytes back through this API's own auth — unlike GET /orders/:id/invoice, it never touches MinIO, so it also works when that's unreachable. Handy for previewing the invoice design against a real order.",
+        "operationId": "OrdersController_getInvoicePdf",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "api-key": []
+          },
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Download/preview the order invoice PDF directly",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
     "/orders/{id}/status": {
       "patch": {
-        "description": "Admins can set any status except DELIVERED, which can only be reached via the two-party verify-delivery flow; a rider may only update an order assigned to them, and only to a delivery-progress status (picked up, in transit, out for delivery, delivered-pending-verification, failed).",
+        "description": "Admins can set any status except DELIVERED, which can only be reached via the two-party verify-delivery flow. A rider may only update an order for the leg they are approved on: the pickup rider can set PICKED_UP / IN_TRANSIT / AT_WAREHOUSE, the delivery rider can set OUT_FOR_DELIVERY / DELIVERED_PENDING_VERIFICATION, and FAILED_DELIVERY is settable by whichever leg currently holds the parcel.",
         "operationId": "OrdersController_updateStatus",
         "parameters": [
           {
@@ -1650,7 +1909,7 @@
     },
     "/orders/{id}/collect-payment": {
       "post": {
-        "description": "For cash-on-delivery orders only — the rider (or admin) confirms they collected the amount from the payer in person. Other payment methods are not settled through this endpoint yet.",
+        "description": "For cash-on-delivery orders only — the delivery-leg rider (or admin) confirms they collected the amount from the payer in person. Other payment methods are not settled through this endpoint yet.",
         "operationId": "OrdersController_collectCodPayment",
         "parameters": [
           {
@@ -1679,7 +1938,44 @@
             "access-token": []
           }
         ],
-        "summary": "Record a COD payment as collected",
+        "summary": "Record a Cash payment as collected",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/orders/{id}/collect-cod-amount": {
+      "post": {
+        "description": "For shipments where the sender set a codAmount to collect from the receiver on delivery (the value of the goods, separate from the delivery charge) — the delivery-leg rider (or admin) confirms they collected it in person.",
+        "operationId": "OrdersController_collectCodAmount",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Record the shop's cash amount as collected from the receiver",
         "tags": [
           "orders"
         ]
@@ -1715,15 +2011,16 @@
             "access-token": []
           }
         ],
-        "summary": "Cancel an order before it is picked up (sender only)",
+        "summary": "Cancel an order before a rider is assigned (sender only)",
         "tags": [
           "orders"
         ]
       }
     },
-    "/orders/{id}/claim": {
+    "/orders/{id}/admin-cancel": {
       "post": {
-        "operationId": "OrdersController_claim",
+        "description": "Unlike POST /orders/:id/cancel (sender-only, only before a rider is assigned), this works at any non-terminal status and notifies any assigned riders too.",
+        "operationId": "OrdersController_adminCancel",
         "parameters": [
           {
             "name": "id",
@@ -1751,15 +2048,16 @@
             "access-token": []
           }
         ],
-        "summary": "Self-assign an unclaimed order (rider)",
+        "summary": "Cancel an order at any stage (admin)",
         "tags": [
           "orders"
         ]
       }
     },
-    "/orders/{id}/unassign": {
+    "/orders/{id}/claim-pickup": {
       "post": {
-        "operationId": "OrdersController_unassign",
+        "description": "Reserves the pickup for this rider so no one else can claim it, but requires admin approval (POST /orders/:id/approve-pickup-rider) before it counts as assigned — see pickupRiderClaimRequestedAt.",
+        "operationId": "OrdersController_claimPickup",
         "parameters": [
           {
             "name": "id",
@@ -1787,15 +2085,124 @@
             "access-token": []
           }
         ],
-        "summary": "Give up an order before pickup, returning it to the available pool (rider)",
+        "summary": "Request the pickup leg of an unclaimed order (rider)",
         "tags": [
           "orders"
         ]
       }
     },
-    "/orders/{id}/assign": {
+    "/orders/{id}/claim-delivery": {
       "post": {
-        "operationId": "OrdersController_assign",
+        "description": "Only possible once the order is AT_WAREHOUSE. Reserves the delivery for this rider so no one else can claim it, but requires admin approval (POST /orders/:id/approve-delivery-rider) before it counts as assigned — see deliveryRiderClaimRequestedAt.",
+        "operationId": "OrdersController_claimDelivery",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Request the delivery leg of an order staged at a warehouse (rider)",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/orders/{id}/unassign-pickup": {
+      "post": {
+        "operationId": "OrdersController_unassignPickup",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Give up the pickup (or cancel a pending pickup request) before it has been collected, returning it to the available pool (rider)",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/orders/{id}/unassign-delivery": {
+      "post": {
+        "operationId": "OrdersController_unassignDelivery",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Give up the delivery (or cancel a pending delivery request) before it has been collected from the warehouse, returning it to the available pool (rider)",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/orders/{id}/assign-pickup": {
+      "post": {
+        "operationId": "OrdersController_assignPickupRider",
         "parameters": [
           {
             "name": "id",
@@ -1833,7 +2240,202 @@
             "access-token": []
           }
         ],
-        "summary": "Assign a specific rider to an order (admin)",
+        "summary": "Directly assign a specific rider to the pickup leg, bypassing self-claim approval (admin)",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/orders/{id}/assign-delivery": {
+      "post": {
+        "description": "Only possible once the order is AT_WAREHOUSE.",
+        "operationId": "OrdersController_assignDeliveryRider",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignRiderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Directly assign a specific rider to the delivery leg, bypassing self-claim approval (admin)",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/orders/{id}/approve-pickup-rider": {
+      "post": {
+        "description": "Finalizes the pickup assignment for an order a rider self-claimed via POST /orders/:id/claim-pickup, and notifies the rider.",
+        "operationId": "OrdersController_approvePickupRider",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Approve a rider's pickup self-claim request (admin)",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/orders/{id}/reject-pickup-rider": {
+      "post": {
+        "description": "Returns the pickup to the available pool and notifies the rider whose request was declined.",
+        "operationId": "OrdersController_rejectPickupRider",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Reject a rider's pickup self-claim request (admin)",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/orders/{id}/approve-delivery-rider": {
+      "post": {
+        "description": "Finalizes the delivery assignment for an order a rider self-claimed via POST /orders/:id/claim-delivery, and notifies the rider.",
+        "operationId": "OrdersController_approveDeliveryRider",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Approve a rider's delivery self-claim request (admin)",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/orders/{id}/reject-delivery-rider": {
+      "post": {
+        "description": "Returns the delivery to the available pool and notifies the rider whose request was declined.",
+        "operationId": "OrdersController_rejectDeliveryRider",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Reject a rider's delivery self-claim request (admin)",
         "tags": [
           "orders"
         ]
@@ -2549,6 +3151,10 @@
           "addressLine": {
             "type": "string"
           },
+          "landmark": {
+            "type": "string",
+            "description": "Nearest recognizable landmark, e.g. \"Near City Hospital\""
+          },
           "city": {
             "type": "string"
           },
@@ -2731,6 +3337,10 @@
           "addressLine": {
             "type": "string"
           },
+          "landmark": {
+            "type": "string",
+            "nullable": true
+          },
           "city": {
             "type": "string",
             "nullable": true
@@ -2856,7 +3466,7 @@
           },
           "riderOrdersCount": {
             "type": "number",
-            "description": "Orders delivered by this account as a rider"
+            "description": "Orders this account has handled as a rider, pickup and delivery legs combined"
           },
           "riderProfile": {
             "nullable": true,
@@ -3123,7 +3733,7 @@
           },
           "riderOrdersCount": {
             "type": "number",
-            "description": "Orders delivered by this account as a rider"
+            "description": "Orders this account has handled as a rider, pickup and delivery legs combined"
           },
           "riderProfile": {
             "nullable": true,
@@ -3217,7 +3827,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "The rider's user id — also what appears as Order.rider.id / AssignRiderDto.riderId"
+            "description": "The rider's user id — also what appears as Order.pickupRider.id / Order.deliveryRider.id / AssignRiderDto.riderId"
           },
           "name": {
             "type": "string"
@@ -3650,6 +4260,74 @@
           }
         }
       },
+      "WarehouseResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "location": {
+            "$ref": "#/components/schemas/LocationResponseDto"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "location",
+          "isActive",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateWarehouseDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "location": {
+            "$ref": "#/components/schemas/LocationInputDto"
+          }
+        },
+        "required": [
+          "name",
+          "location"
+        ]
+      },
+      "UpdateWarehouseDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "location": {
+            "description": "Replaces the warehouse's location details in place — the underlying Location row is updated, not swapped.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LocationInputDto"
+              }
+            ]
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Deactivating a warehouse takes it out of nearest-warehouse routing for new orders — in-flight orders already assigned to it are unaffected."
+          }
+        }
+      },
       "ReceiverInputDto": {
         "type": "object",
         "properties": {
@@ -3726,7 +4404,11 @@
               "CONNECTIPS"
             ],
             "default": "COD",
-            "description": "Only COD actually settles today — other methods just tag the order for now (see PaymentMethod)."
+            "description": "Only Cash actually settles today — other methods just tag the order for now (see PaymentMethod)."
+          },
+          "codAmount": {
+            "type": "number",
+            "description": "Cash amount the rider should collect from the receiver for the goods themselves, separate from the delivery charge. Leave unset if nothing needs to be collected from the receiver on delivery."
           },
           "pickupLocation": {
             "description": "Pickup point for this order. Defaults to the sender's registered shop location.",
@@ -3768,6 +4450,33 @@
           "id",
           "name",
           "phoneNumber"
+        ]
+      },
+      "OrderWarehouseResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "addressLine": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "addressLine",
+          "latitude",
+          "longitude"
         ]
       },
       "MediaAssetResponseDto": {
@@ -3840,6 +4549,7 @@
               "CONFIRMED",
               "PICKED_UP",
               "IN_TRANSIT",
+              "AT_WAREHOUSE",
               "OUT_FOR_DELIVERY",
               "DELIVERED_PENDING_VERIFICATION",
               "DELIVERED",
@@ -3911,8 +4621,9 @@
             "type": "string",
             "nullable": true
           },
-          "rider": {
+          "pickupRider": {
             "nullable": true,
+            "description": "Rider handling the pickup leg — collects the parcel from the sender and brings it to `warehouse`",
             "type": "object",
             "allOf": [
               {
@@ -3920,10 +4631,53 @@
               }
             ]
           },
-          "riderAssignedAt": {
+          "pickupRiderAssignedAt": {
             "format": "date-time",
             "type": "string",
             "nullable": true
+          },
+          "pickupRiderClaimRequestedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "Set while a pickup self-claim is awaiting admin approval; null once approved (or if the rider was assigned directly by an admin)"
+          },
+          "warehouse": {
+            "nullable": true,
+            "description": "The warehouse this order is routed through — nearest active one to the pickup location, assigned at order creation",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderWarehouseResponseDto"
+              }
+            ]
+          },
+          "warehouseArrivedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "Set by the pickup rider once the parcel is dropped at the warehouse — this is what makes the order visible for the delivery leg"
+          },
+          "deliveryRider": {
+            "nullable": true,
+            "description": "Rider handling the delivery leg — collects the parcel from `warehouse` and delivers it to the receiver",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderRiderResponseDto"
+              }
+            ]
+          },
+          "deliveryRiderAssignedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "deliveryRiderClaimRequestedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "Set while a delivery self-claim is awaiting admin approval; null once approved (or if the rider was assigned directly by an admin)"
           },
           "pickupLocation": {
             "$ref": "#/components/schemas/LocationResponseDto"
@@ -3977,6 +4731,16 @@
             "type": "string",
             "nullable": true
           },
+          "codAmount": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cash amount to collect from the receiver for the goods themselves, separate from the delivery charge"
+          },
+          "codCollectedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -3984,6 +4748,7 @@
               "CONFIRMED",
               "PICKED_UP",
               "IN_TRANSIT",
+              "AT_WAREHOUSE",
               "OUT_FOR_DELIVERY",
               "DELIVERED_PENDING_VERIFICATION",
               "DELIVERED",
@@ -4075,6 +4840,7 @@
               "CONFIRMED",
               "PICKED_UP",
               "IN_TRANSIT",
+              "AT_WAREHOUSE",
               "OUT_FOR_DELIVERY",
               "DELIVERED_PENDING_VERIFICATION",
               "DELIVERED",
@@ -4146,6 +4912,7 @@
               "CONFIRMED",
               "PICKED_UP",
               "IN_TRANSIT",
+              "AT_WAREHOUSE",
               "OUT_FOR_DELIVERY",
               "DELIVERED_PENDING_VERIFICATION",
               "DELIVERED",
@@ -4183,6 +4950,54 @@
         "required": [
           "signature"
         ]
+      },
+      "UpdatePackageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Existing Package id to update — this endpoint edits packages in place, it does not add or remove them"
+          },
+          "name": {
+            "type": "string"
+          },
+          "weightKg": {
+            "type": "number"
+          },
+          "isDangerous": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdateOrderDto": {
+        "type": "object",
+        "properties": {
+          "receiverName": {
+            "type": "string"
+          },
+          "receiverPhoneNumber": {
+            "type": "string",
+            "example": "+9779800000000"
+          },
+          "receiverEmail": {
+            "type": "string"
+          },
+          "deliveryLocation": {
+            "description": "Replaces the delivery address in place — the underlying Location row is updated, not swapped.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LocationInputDto"
+              }
+            ]
+          },
+          "packages": {
+            "description": "Edits to existing packages, matched by id. Changing weightKg or isDangerous on any package (or changing deliveryLocation) re-runs pricing so the charged amount stays accurate.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UpdatePackageDto"
+            }
+          }
+        }
       },
       "AssignRiderDto": {
         "type": "object",

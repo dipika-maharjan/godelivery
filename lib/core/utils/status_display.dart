@@ -30,11 +30,23 @@ StatusDisplay statusDisplayFor(OrderStatus status) {
       );
     case OrderStatus.inTransit:
       return const StatusDisplay('In transit', Colors.blue, LucideIcons.truck);
+    case OrderStatus.atWarehouse:
+      return const StatusDisplay(
+        'At warehouse',
+        Colors.teal,
+        LucideIcons.warehouse,
+      );
     case OrderStatus.outForDelivery:
       return const StatusDisplay(
         'Out for delivery',
         Colors.deepPurple,
         LucideIcons.bike,
+      );
+    case OrderStatus.deliveredPendingVerification:
+      return const StatusDisplay(
+        'Awaiting confirmation',
+        Colors.amber,
+        LucideIcons.userCheck,
       );
     case OrderStatus.delivered:
       return const StatusDisplay(
