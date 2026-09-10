@@ -10,7 +10,6 @@ final themeStorageProvider = Provider<ThemeStorage>((ref) {
   return ThemeStorage(ref.watch(sharedPreferencesProvider));
 });
 
-/// Wraps shared preferences for the persisted theme mode choice.
 class ThemeStorage {
   ThemeStorage(this._prefs);
 
@@ -20,6 +19,7 @@ class ThemeStorage {
 
   Future<ThemeMode?> read() async {
     final value = await _prefs.getString(_themeModeKey);
+
     return switch (value) {
       'light' => ThemeMode.light,
       'dark' => ThemeMode.dark,
