@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "594396276650",
+    "project_id": "godelivery-f289c",
+    "storage_bucket": "godelivery-f289c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:594396276650:android:dca88885409b1193e32dd3",
+        "android_client_info": {
+          "package_name": "com.godokan.godelivery"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcwGHeZ9dwpycv_6HnPgXMQoAniE1ZB24"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
