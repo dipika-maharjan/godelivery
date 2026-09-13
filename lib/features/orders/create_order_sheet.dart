@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:galli_maps_package/galli_maps_package.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -21,6 +20,7 @@ import '../../models/pricing.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/orders_provider.dart';
 import '../../widgets/app_text_field.dart';
+import '../../widgets/google_location_picker.dart';
 import '../../widgets/primary_button.dart';
 
 class CreateOrderSheet extends ConsumerStatefulWidget {
@@ -61,7 +61,7 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
   final _codAmountController = TextEditingController();
   final List<_PackageDraftControllers> _packages = [_PackageDraftControllers()];
 
-  GalliPickedLocation? _deliveryLocation;
+  PickedLocation? _deliveryLocation;
   Timer? _lookupDebounce;
   Timer? _estimateDebounce;
   bool _looking = false;
@@ -117,7 +117,10 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
   }
 
   Future<void> _pickDeliveryLocation() async {
-    final picked = await GalliLocationPicker.pickLocation(context);
+    final picked = await GoogleLocationPicker.pickLocation(
+      context,
+      initialLocation: _deliveryLocation,
+    );
     if (picked != null) {
       setState(() => _deliveryLocation = picked);
       _scheduleEstimate();
@@ -485,7 +488,7 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
 class _LocationPickerField extends StatelessWidget {
   const _LocationPickerField({required this.location, required this.onTap});
 
-  final GalliPickedLocation? location;
+  final PickedLocation? location;
   final VoidCallback onTap;
 
   @override
@@ -513,29 +516,41 @@ class _LocationPickerField extends StatelessWidget {
                   ? Border.all(color: AppColors.primary, width: 1.5)
                   : null,
             ),
-            child: Row(
+            child: Column(
               children: [
-                Icon(LucideIcons.mapPin, size: 18, color: context.colors.text),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    location?.address ??
-                        location?.name ??
-                        'Pick delivery location on the map',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      color: location != null
-                          ? context.colors.text
-                          : context.colors.textMuted,
+                if (location != null) ...[
+                  GoogleLocationPreview(location: location!),
+                  const SizedBox(height: 12),
+                ],
+                Row(
+                  children: [
+                    Icon(
+                      LucideIcons.mapPin,
+                      size: 18,
+                      color: context.colors.text,
                     ),
-                  ),
-                ),
-                Icon(
-                  LucideIcons.chevronRight,
-                  size: 18,
-                  color: context.colors.textMuted,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        location?.address ??
+                            location?.name ??
+                            'Pick delivery location on the map',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          color: location != null
+                              ? context.colors.text
+                              : context.colors.textMuted,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      LucideIcons.chevronRight,
+                      size: 18,
+                      color: context.colors.textMuted,
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -560,8 +575,30 @@ class _PackageFormRow extends ConsumerWidget {
   final VoidCallback onRemove;
 
   Future<void> _addPhoto(BuildContext context, WidgetRef ref) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(LucideIcons.camera),
+              title: const Text('Take photo'),
+              onTap: () => Navigator.of(context).pop(ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(LucideIcons.images),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+
     final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
+      source: source,
       maxWidth: 1600,
       imageQuality: 85,
     );
