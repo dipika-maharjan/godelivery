@@ -134,19 +134,4 @@ class OrderRepository {
       throw ApiException.fromDioException(e);
     }
   }
-
-  Future<Order> updatePickupLocation(
-    String id,
-    LocationInput pickupLocation,
-  ) async {
-    try {
-      final response = await _dio.patch(
-        '/orders/$id',
-        data: {'pickupLocation': pickupLocation.toJson()},
-      );
-      return Order.fromJson(response.data as Map<String, dynamic>);
-    } on DioException catch (e) {
-      throw ApiException.fromDioException(e);
-    }
-  }
 }

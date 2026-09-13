@@ -8,12 +8,10 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/payment_display.dart';
 import '../../core/utils/status_display.dart';
 import '../../data/order_repository.dart';
-import '../../models/location.dart';
 import '../../models/order.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/orders_provider.dart';
 import '../../widgets/order_status_chip.dart';
-import '../../widgets/google_location_picker.dart';
 
 class OrderDetailPage extends ConsumerWidget {
   const OrderDetailPage({super.key, required this.orderId});
@@ -50,7 +48,6 @@ class _OrderDetailBody extends ConsumerStatefulWidget {
 
 class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
   bool _cancelling = false;
-  bool _updatingPickup = false;
 
   static const _terminalStatuses = {
     OrderStatus.delivered,
@@ -63,30 +60,6 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
       widget.order.senderId == currentUserId &&
       widget.order.pickupRiderAssignedAt == null &&
       !_terminalStatuses.contains(widget.order.status);
-
-  Future<void> _confirmCancel() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cancel shipment?'),
-        content: const Text('Are you sure you want to cancel this shipment?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('No'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Yes', style: TextStyle(color: AppColors.danger)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      await _cancel();
-    }
-  }
 
   Future<void> _cancel() async {
     setState(() => _cancelling = true);
@@ -108,50 +81,6 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
       ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _cancelling = false);
-    }
-  }
-
-  Future<void> _editPickupLocation() async {
-    final current = widget.order.pickupLocation;
-    final picked = await GoogleLocationPicker.pickLocation(
-      context,
-      initialLocation: PickedLocation(
-        latitude: current.latitude,
-        longitude: current.longitude,
-        address: current.addressLine,
-        name: current.label,
-      ),
-    );
-    if (picked == null || !mounted) return;
-
-    setState(() => _updatingPickup = true);
-    try {
-      await ref
-          .read(orderRepositoryProvider)
-          .updatePickupLocation(
-            widget.order.id,
-            LocationInput(
-              addressLine: picked.address ?? picked.name ?? 'Pickup location',
-              latitude: picked.latitude,
-              longitude: picked.longitude,
-            ),
-          );
-      ref.invalidate(orderDetailProvider(widget.order.id));
-      ref.invalidate(ordersProvider(OrderRoleFilter.sent));
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Pickup location updated.')));
-    } catch (e) {
-      final message = e is ApiException
-          ? e.message
-          : 'Could not update the pickup location.';
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
-    } finally {
-      if (mounted) setState(() => _updatingPickup = false);
     }
   }
 
@@ -194,18 +123,6 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
           label: 'Pickup',
           address: order.pickupLocation.addressLine,
         ),
-        if (_canCancel(currentUserId)) ...[
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _updatingPickup ? null : _editPickupLocation,
-              icon: const Icon(LucideIcons.pencil, size: 16),
-              label: Text(
-                _updatingPickup ? 'Updating...' : 'Edit pickup location',
-              ),
-            ),
-          ),
-        ],
         const SizedBox(height: 10),
         _AddressCard(
           icon: LucideIcons.mapPin,
@@ -277,7 +194,7 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
         if (_canCancel(currentUserId)) ...[
           const SizedBox(height: 12),
           OutlinedButton(
-            onPressed: _cancelling ? null : _confirmCancel,
+            onPressed: _cancelling ? null : _cancel,
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.danger,
               side: const BorderSide(color: AppColors.danger),

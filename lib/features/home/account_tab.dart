@@ -6,7 +6,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/order_repository.dart';
-import 'feedback_page.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/orders_provider.dart';
 import '../../providers/package_info_provider.dart';
@@ -36,7 +35,6 @@ class AccountTab extends ConsumerWidget {
 
     return SafeArea(
       child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
         children: [
           const Text(
@@ -141,9 +139,11 @@ class AccountTab extends ConsumerWidget {
           _ActionTile(
             icon: LucideIcons.messageSquare,
             label: 'Send feedback',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const FeedbackPage()),
-            ),
+            onTap: () {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Coming soon.')));
+            },
           ),
           const SizedBox(height: 10),
           _ActionTile(
