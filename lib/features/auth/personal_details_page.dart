@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:galli_maps_package/galli_maps_package.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/network/api_exception.dart';
@@ -8,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/location.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/app_text_field.dart';
+import '../../widgets/google_location_picker.dart';
 import '../../widgets/primary_button.dart';
 
 class PersonalDetailsArgs {
@@ -40,7 +40,7 @@ class _PersonalDetailsPageState extends ConsumerState<PersonalDetailsPage> {
   final _shopNameController = TextEditingController();
   final _emailController = TextEditingController();
 
-  GalliPickedLocation? _pickedLocation;
+  PickedLocation? _pickedLocation;
   bool _submitting = false;
 
   @override
@@ -57,7 +57,10 @@ class _PersonalDetailsPageState extends ConsumerState<PersonalDetailsPage> {
       _pickedLocation != null;
 
   Future<void> _pickLocation() async {
-    final picked = await GalliLocationPicker.pickLocation(context);
+    final picked = await GoogleLocationPicker.pickLocation(
+      context,
+      initialLocation: _pickedLocation,
+    );
     if (picked != null) {
       setState(() => _pickedLocation = picked);
     }
@@ -160,33 +163,37 @@ class _PersonalDetailsPageState extends ConsumerState<PersonalDetailsPage> {
                       ? Border.all(color: AppColors.primary, width: 1.5)
                       : null,
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    Icon(
-                      LucideIcons.mapPin,
-                      size: 18,
-                      color: context.colors.text,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        _pickedLocation?.address ??
-                            _pickedLocation?.name ??
-                            'Pick your shop location on the map',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          color: _pickedLocation != null
-                              ? context.colors.text
-                              : context.colors.textMuted,
+                    Row(
+                      children: [
+                        Icon(
+                          LucideIcons.mapPin,
+                          size: 18,
+                          color: context.colors.text,
                         ),
-                      ),
-                    ),
-                    Icon(
-                      LucideIcons.chevronRight,
-                      size: 18,
-                      color: context.colors.textMuted,
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _pickedLocation?.address ??
+                                _pickedLocation?.name ??
+                                'Pick your shop location on the map',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              color: _pickedLocation != null
+                                  ? context.colors.text
+                                  : context.colors.textMuted,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          LucideIcons.chevronRight,
+                          size: 18,
+                          color: context.colors.textMuted,
+                        ),
+                      ],
                     ),
                   ],
                 ),

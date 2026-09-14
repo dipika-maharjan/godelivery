@@ -7,7 +7,8 @@ class AppConfig {
   /// instead; on a physical device, use your machine's LAN IP.
   // static const String baseUrl = 'https://zsljfc89-3000.inc1.devtunnels.ms';
   static const String baseUrl = 'https://api.godelivery.godokan.com';
+  // static const String baseUrl = 'https://xw4p2nm8-3000.inc1.devtunnels.ms/';
   // static const String baseUrl = 'https://192.168.101.14';
-  static const String galliMapsAccessToken =
-      'c45ae985-cfbe-435b-8260-4851b02e6b21';
+  static const String googleMapsApiKey =
+      'AIzaSyBZyMxR8oPlM1PPW1FjMULHyRc2kJnWNRc';
 }
