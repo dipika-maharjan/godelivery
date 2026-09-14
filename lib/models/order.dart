@@ -42,6 +42,20 @@ OrderStatus orderStatusFromJson(String value) {
   }
 }
 
+String orderStatusToJson(OrderStatus status) => switch (status) {
+  OrderStatus.pending => 'PENDING',
+  OrderStatus.confirmed => 'CONFIRMED',
+  OrderStatus.pickedUp => 'PICKED_UP',
+  OrderStatus.inTransit => 'IN_TRANSIT',
+  OrderStatus.atWarehouse => 'AT_WAREHOUSE',
+  OrderStatus.outForDelivery => 'OUT_FOR_DELIVERY',
+  OrderStatus.deliveredPendingVerification => 'DELIVERED_PENDING_VERIFICATION',
+  OrderStatus.delivered => 'DELIVERED',
+  OrderStatus.failedDelivery => 'FAILED_DELIVERY',
+  OrderStatus.cancelled => 'CANCELLED',
+  OrderStatus.returned => 'RETURNED',
+};
+
 enum OrderPayer { sender, receiver }
 
 OrderPayer orderPayerFromJson(String value) =>
@@ -232,6 +246,9 @@ class Order {
     this.deliveryRiderClaimRequestedAt,
     required this.pickupLocation,
     required this.deliveryLocation,
+    this.pickupContactName,
+    this.pickupContactPhone,
+    this.scheduledPickupDate,
     required this.distanceKm,
     required this.totalWeightKg,
     required this.hasDangerousGoods,
@@ -294,6 +311,11 @@ class Order {
       deliveryLocation: LocationResponse.fromJson(
         json['deliveryLocation'] as Map<String, dynamic>,
       ),
+      pickupContactName: json['pickupContactName'] as String?,
+      pickupContactPhone: json['pickupContactPhone'] as String?,
+      scheduledPickupDate: json['scheduledPickupDate'] == null
+          ? null
+          : DateTime.parse(json['scheduledPickupDate'] as String),
       distanceKm: (json['distanceKm'] as num).toDouble(),
       totalWeightKg: (json['totalWeightKg'] as num).toDouble(),
       hasDangerousGoods: json['hasDangerousGoods'] as bool,
@@ -342,6 +364,9 @@ class Order {
   final DateTime? deliveryRiderClaimRequestedAt;
   final LocationResponse pickupLocation;
   final LocationResponse deliveryLocation;
+  final String? pickupContactName;
+  final String? pickupContactPhone;
+  final DateTime? scheduledPickupDate;
   final double distanceKm;
   final double totalWeightKg;
   final bool hasDangerousGoods;

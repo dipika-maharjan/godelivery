@@ -3,6 +3,7 @@ class LocationInput {
   const LocationInput({
     this.label,
     required this.addressLine,
+    this.landmark,
     this.city,
     this.state,
     this.postalCode,
@@ -15,6 +16,7 @@ class LocationInput {
 
   final String? label;
   final String addressLine;
+  final String? landmark;
   final String? city;
   final String? state;
   final String? postalCode;
@@ -28,6 +30,7 @@ class LocationInput {
     return {
       if (label != null) 'label': label,
       'addressLine': addressLine,
+      if (landmark != null) 'landmark': landmark,
       if (city != null) 'city': city,
       if (state != null) 'state': state,
       if (postalCode != null) 'postalCode': postalCode,
@@ -46,6 +49,7 @@ class LocationResponse {
     required this.id,
     this.label,
     required this.addressLine,
+    this.landmark,
     this.city,
     this.state,
     this.postalCode,
@@ -59,6 +63,7 @@ class LocationResponse {
       id: json['id'] as String,
       label: json['label'] as String?,
       addressLine: json['addressLine'] as String,
+      landmark: json['landmark'] as String?,
       city: json['city'] as String?,
       state: json['state'] as String?,
       postalCode: json['postalCode'] as String?,
@@ -71,6 +76,7 @@ class LocationResponse {
   final String id;
   final String? label;
   final String addressLine;
+  final String? landmark;
   final String? city;
   final String? state;
   final String? postalCode;

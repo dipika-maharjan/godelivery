@@ -13,7 +13,7 @@ import '../../models/order.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/orders_provider.dart';
 import '../../widgets/order_status_chip.dart';
-import '../../widgets/google_location_picker.dart';
+import '../../widgets/location_picker.dart';
 
 class OrderDetailPage extends ConsumerWidget {
   const OrderDetailPage({super.key, required this.orderId});
@@ -113,7 +113,7 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
 
   Future<void> _editPickupLocation() async {
     final current = widget.order.pickupLocation;
-    final picked = await GoogleLocationPicker.pickLocation(
+    final picked = await LocationPicker.pickLocation(
       context,
       initialLocation: PickedLocation(
         latitude: current.latitude,
@@ -194,6 +194,26 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
           label: 'Pickup',
           address: order.pickupLocation.addressLine,
         ),
+        if (order.pickupContactName != null ||
+            order.pickupContactPhone != null) ...[
+          const SizedBox(height: 10),
+          _AddressCard(
+            icon: LucideIcons.userRound,
+            label: 'Pickup contact',
+            address: [
+              order.pickupContactName,
+              order.pickupContactPhone,
+            ].whereType<String>().join(' · '),
+          ),
+        ],
+        if (order.scheduledPickupDate != null) ...[
+          const SizedBox(height: 10),
+          _AddressCard(
+            icon: LucideIcons.calendarClock,
+            label: 'Scheduled pickup',
+            address: DateFormat('MMM d, y').format(order.scheduledPickupDate!),
+          ),
+        ],
         if (_canCancel(currentUserId)) ...[
           Align(
             alignment: Alignment.centerRight,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:otp_autofill/otp_autofill.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../core/theme/app_theme.dart';
@@ -25,21 +26,41 @@ class OtpVerifyPage extends ConsumerStatefulWidget {
 }
 
 class _OtpVerifyPageState extends ConsumerState<OtpVerifyPage> {
+  final _otpBoxKey = GlobalKey<OtpBoxInputState>();
   String _code = '';
   bool _submitting = false;
   bool _resending = false;
   int _cooldown = _resendCooldownSeconds;
   Timer? _timer;
 
+  late final _otpInteractor = OTPInteractor();
+  late final _otpAutoFillController = OTPTextEditController(
+    codeLength: _otpLength,
+    otpInteractor: _otpInteractor,
+    onCodeReceive: (code) {
+      _otpBoxKey.currentState?.setCode(code);
+      setState(() => _code = code);
+    },
+  );
+
   @override
   void initState() {
     super.initState();
     _startCooldown();
+    _listenForIncomingCode();
+  }
+
+  void _listenForIncomingCode() {
+    final codePattern = RegExp('\\d{$_otpLength}');
+    _otpAutoFillController.startListenUserConsent(
+      (code) => codePattern.firstMatch(code ?? '')?.group(0) ?? '',
+    );
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _otpAutoFillController.stopListen();
     super.dispose();
   }
 
@@ -68,6 +89,7 @@ class _OtpVerifyPageState extends ConsumerState<OtpVerifyPage> {
         context,
       ).showSnackBar(const SnackBar(content: Text('Code resent.')));
       _startCooldown();
+      _listenForIncomingCode();
     } catch (e) {
       final message = e is ApiException
           ? e.message
@@ -133,6 +155,7 @@ class _OtpVerifyPageState extends ConsumerState<OtpVerifyPage> {
             ),
             const SizedBox(height: 32),
             OtpBoxInput(
+              key: _otpBoxKey,
               length: _otpLength,
               onChanged: (value) => setState(() => _code = value),
             ),

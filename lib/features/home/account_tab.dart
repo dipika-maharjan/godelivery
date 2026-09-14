@@ -6,7 +6,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/order_repository.dart';
+import 'edit_profile_page.dart';
 import 'feedback_page.dart';
+import 'saved_addresses_page.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/orders_provider.dart';
 import '../../providers/package_info_provider.dart';
@@ -138,6 +140,22 @@ class AccountTab extends ConsumerWidget {
           const SizedBox(height: 10),
           const _ThemeModeSelector(),
           const SizedBox(height: 24),
+          _ActionTile(
+            icon: LucideIcons.userPen,
+            label: 'Edit profile',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EditProfilePage()),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _ActionTile(
+            icon: LucideIcons.mapPinned,
+            label: 'Saved addresses',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SavedAddressesPage()),
+            ),
+          ),
+          const SizedBox(height: 10),
           _ActionTile(
             icon: LucideIcons.messageSquare,
             label: 'Send feedback',

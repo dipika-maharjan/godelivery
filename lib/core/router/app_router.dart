@@ -1,15 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
+import '../../features/admin/admin_shell.dart';
+import '../../features/admin/orders/admin_order_detail_page.dart';
 import '../../features/auth/otp_verify_page.dart';
 import '../../features/auth/personal_details_page.dart';
 import '../../features/auth/sign_in_page.dart';
 import '../../features/home/home_shell.dart';
 import '../../features/notifications/notifications_page.dart';
 import '../../features/orders/order_detail_page.dart';
+import '../../features/rider/deliveries/rider_order_detail_page.dart';
+import '../../features/rider/rider_shell.dart';
 import '../../features/tracking/track_result_page.dart';
 import '../../features/welcome/welcome_page.dart';
+import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
 
 class _AuthRouterRefresh extends ChangeNotifier {
@@ -33,12 +37,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (auth.isLoading) return null;
 
       final isAuthEntryRoute = loc == '/welcome' || loc.startsWith('/sign-in');
-      if (!auth.isAuthenticated && loc.startsWith('/home')) {
-        return '/welcome';
+      if (!auth.isAuthenticated) {
+        if (loc.startsWith('/home') ||
+            loc.startsWith('/admin') ||
+            loc.startsWith('/rider')) {
+          return '/welcome';
+        }
+        return null;
       }
-      if (auth.isAuthenticated && isAuthEntryRoute) {
-        return '/home';
+
+      final role = auth.user?.role;
+      if (role == UserRole.admin) {
+        if (isAuthEntryRoute || loc.startsWith('/home') || loc.startsWith('/rider')) {
+          return '/admin';
+        }
+        return null;
       }
+      if (role == UserRole.rider) {
+        if (isAuthEntryRoute || loc.startsWith('/home') || loc.startsWith('/admin')) {
+          return '/rider';
+        }
+        return null;
+      }
+      if (loc.startsWith('/admin') || loc.startsWith('/rider')) return '/home';
+      if (isAuthEntryRoute) return '/home';
       return null;
     },
     routes: [
@@ -80,6 +102,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/orders/:id',
         builder: (context, state) =>
             OrderDetailPage(orderId: state.pathParameters['id']!),
+      ),
+      GoRoute(path: '/admin', builder: (context, state) => const AdminShell()),
+      GoRoute(
+        path: '/admin/orders/:id',
+        builder: (context, state) =>
+            AdminOrderDetailPage(orderId: state.pathParameters['id']!),
+      ),
+      GoRoute(path: '/rider', builder: (context, state) => const RiderShell()),
+      GoRoute(
+        path: '/rider/orders/:id',
+        builder: (context, state) =>
+            RiderOrderDetailPage(orderId: state.pathParameters['id']!),
       ),
     ],
   );

@@ -1,13 +1,18 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/greeting.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/app_text_field.dart';
 import '../../widgets/primary_button.dart';
+
+const _termsUrl = 'https://godelivery.godokan.com/help/terms-and-conditions';
+const _privacyUrl = 'https://godelivery.godokan.com/help/privacy-policies';
 
 class WelcomePage extends ConsumerStatefulWidget {
   const WelcomePage({super.key});
@@ -18,11 +23,29 @@ class WelcomePage extends ConsumerStatefulWidget {
 
 class _WelcomePageState extends ConsumerState<WelcomePage> {
   final _trackingController = TextEditingController();
+  late final _termsTapRecognizer = TapGestureRecognizer()
+    ..onTap = () => _openUrl(_termsUrl);
+  late final _privacyTapRecognizer = TapGestureRecognizer()
+    ..onTap = () => _openUrl(_privacyUrl);
 
   @override
   void dispose() {
     _trackingController.dispose();
+    _termsTapRecognizer.dispose();
+    _privacyTapRecognizer.dispose();
     super.dispose();
+  }
+
+  Future<void> _openUrl(String url) async {
+    final launched = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Couldn't open the link.")));
+    }
   }
 
   void _track() {
@@ -154,14 +177,37 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                         onPressed: () => context.push('/sign-in'),
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        'By continuing, you agree to our Terms of Service and Privacy Policy',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: context.colors.textMuted,
-                          height: 1.4,
+                      Text.rich(
+                        TextSpan(
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: context.colors.textMuted,
+                            height: 1.4,
+                          ),
+                          children: [
+                            const TextSpan(text: 'By continuing, you agree to our '),
+                            TextSpan(
+                              text: 'Terms of Service',
+                              style: TextStyle(
+                                color: context.colors.text,
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: _termsTapRecognizer,
+                            ),
+                            const TextSpan(text: ' and '),
+                            TextSpan(
+                              text: 'Privacy Policy',
+                              style: TextStyle(
+                                color: context.colors.text,
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: _privacyTapRecognizer,
+                            ),
+                          ],
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
@@ -195,7 +241,7 @@ class _PerkRow extends StatelessWidget {
             ),
             child: Icon(icon, size: 17, color: context.colors.textMuted),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 0),
           Expanded(child: Text(text, style: const TextStyle(fontSize: 13.5))),
         ],
       ),

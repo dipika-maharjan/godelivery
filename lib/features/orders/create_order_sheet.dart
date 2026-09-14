@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import 'package:intl/intl.dart';
+
 import '../../core/network/api_exception.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/payment_display.dart';
@@ -17,11 +19,14 @@ import '../../data/user_repository.dart';
 import '../../models/location.dart';
 import '../../models/order.dart';
 import '../../models/pricing.dart';
+import '../../models/saved_location.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/orders_provider.dart';
+import '../../providers/saved_locations_provider.dart';
 import '../../widgets/app_text_field.dart';
-import '../../widgets/google_location_picker.dart';
+import '../../widgets/location_picker.dart';
 import '../../widgets/primary_button.dart';
+import '../home/saved_addresses_page.dart';
 
 class CreateOrderSheet extends ConsumerStatefulWidget {
   const CreateOrderSheet({super.key});
@@ -54,14 +59,22 @@ class _PackageDraftControllers {
   }
 }
 
+enum _PickupMode { shopDefault, saved, custom }
+
 class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
   final _phoneController = TextEditingController();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _codAmountController = TextEditingController();
+  final _pickupContactNameController = TextEditingController();
+  final _pickupContactPhoneController = TextEditingController();
   final List<_PackageDraftControllers> _packages = [_PackageDraftControllers()];
 
   PickedLocation? _deliveryLocation;
+  _PickupMode _pickupMode = _PickupMode.shopDefault;
+  SavedLocation? _selectedSavedLocation;
+  PickedLocation? _customPickupLocation;
+  DateTime? _scheduledPickupDate;
   Timer? _lookupDebounce;
   Timer? _estimateDebounce;
   bool _looking = false;
@@ -77,12 +90,96 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
     _nameController.dispose();
     _emailController.dispose();
     _codAmountController.dispose();
+    _pickupContactNameController.dispose();
+    _pickupContactPhoneController.dispose();
     for (final p in _packages) {
       p.dispose();
     }
     _lookupDebounce?.cancel();
     _estimateDebounce?.cancel();
     super.dispose();
+  }
+
+  /// Coordinates of the currently selected pickup point, for the price
+  /// estimate — null while that selection isn't resolved yet.
+  (double, double)? get _pickupCoordinates {
+    switch (_pickupMode) {
+      case _PickupMode.shopDefault:
+        final shop = ref.read(authControllerProvider).user?.shopLocation;
+        return shop == null ? null : (shop.latitude, shop.longitude);
+      case _PickupMode.saved:
+        final saved = _selectedSavedLocation;
+        return saved == null ? null : (saved.latitude, saved.longitude);
+      case _PickupMode.custom:
+        final custom = _customPickupLocation;
+        return custom == null ? null : (custom.latitude, custom.longitude);
+    }
+  }
+
+  String get _pickupSummary {
+    switch (_pickupMode) {
+      case _PickupMode.shopDefault:
+        final shop = ref.read(authControllerProvider).user?.shopLocation;
+        return shop?.addressLine ?? 'Your shop location';
+      case _PickupMode.saved:
+        final saved = _selectedSavedLocation;
+        return saved == null
+            ? 'Choose pickup location'
+            : (saved.label ?? saved.addressLine);
+      case _PickupMode.custom:
+        final custom = _customPickupLocation;
+        return custom == null
+            ? 'Choose pickup location'
+            : (custom.address ?? custom.name ?? 'Pickup location');
+    }
+  }
+
+  Future<void> _choosePickupLocation() async {
+    final selection = await showModalBottomSheet<_PickupSelection>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => _PickupLocationSheet(
+        currentMode: _pickupMode,
+        currentSavedLocation: _selectedSavedLocation,
+      ),
+    );
+    if (selection == null || !mounted) return;
+    switch (selection) {
+      case _ShopDefaultSelection():
+        setState(() {
+          _pickupMode = _PickupMode.shopDefault;
+          _selectedSavedLocation = null;
+        });
+      case _SavedLocationSelection(:final location):
+        setState(() {
+          _pickupMode = _PickupMode.saved;
+          _selectedSavedLocation = location;
+        });
+      case _CustomLocationSelection():
+        final picked = await LocationPicker.pickLocation(
+          context,
+          initialLocation: _customPickupLocation,
+        );
+        if (picked == null || !mounted) return;
+        setState(() {
+          _pickupMode = _PickupMode.custom;
+          _customPickupLocation = picked;
+        });
+    }
+    _scheduleEstimate();
+  }
+
+  Future<void> _pickScheduledDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _scheduledPickupDate ?? now,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 30)),
+    );
+    if (picked != null) {
+      setState(() => _scheduledPickupDate = picked);
+    }
   }
 
   void _onPhoneChanged(String value) {
@@ -117,7 +214,7 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
   }
 
   Future<void> _pickDeliveryLocation() async {
-    final picked = await GoogleLocationPicker.pickLocation(
+    final picked = await LocationPicker.pickLocation(
       context,
       initialLocation: _deliveryLocation,
     );
@@ -156,10 +253,10 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
   }
 
   Future<void> _computeEstimate() async {
-    final shopLocation = ref.read(authControllerProvider).user?.shopLocation;
+    final pickup = _pickupCoordinates;
     final delivery = _deliveryLocation;
     final totalWeight = _totalWeightKg();
-    if (shopLocation == null || delivery == null || totalWeight <= 0) {
+    if (pickup == null || delivery == null || totalWeight <= 0) {
       setState(() => _estimate = null);
       return;
     }
@@ -169,10 +266,7 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
           .read(pricingRepositoryProvider)
           .estimate(
             EstimateRequest(
-              pickup: Coordinates(
-                latitude: shopLocation.latitude,
-                longitude: shopLocation.longitude,
-              ),
+              pickup: Coordinates(latitude: pickup.$1, longitude: pickup.$2),
               delivery: Coordinates(
                 latitude: delivery.latitude,
                 longitude: delivery.longitude,
@@ -194,6 +288,12 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
     if (!isValidNepaliMobileNumber(_phoneController.text)) return false;
     if (_nameController.text.trim().isEmpty) return false;
     if (_deliveryLocation == null) return false;
+    if (_pickupMode == _PickupMode.saved && _selectedSavedLocation == null) {
+      return false;
+    }
+    if (_pickupMode == _PickupMode.custom && _customPickupLocation == null) {
+      return false;
+    }
     for (final p in _packages) {
       if (p.nameController.text.trim().isEmpty) return false;
       final weight = double.tryParse(p.weightController.text.trim());
@@ -208,9 +308,29 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
     setState(() => _submitting = true);
     final delivery = _deliveryLocation!;
     try {
+      final custom = _customPickupLocation;
       final order = await ref
           .read(orderRepositoryProvider)
           .create(
+            pickupLocationId: _pickupMode == _PickupMode.saved
+                ? _selectedSavedLocation?.id
+                : null,
+            pickupLocation: _pickupMode == _PickupMode.custom && custom != null
+                ? LocationInput(
+                    addressLine:
+                        custom.address ?? custom.name ?? 'Pickup location',
+                    latitude: custom.latitude,
+                    longitude: custom.longitude,
+                  )
+                : null,
+            pickupContactName: _pickupContactNameController.text.trim().isEmpty
+                ? null
+                : _pickupContactNameController.text.trim(),
+            pickupContactPhone:
+                _pickupContactPhoneController.text.trim().isEmpty
+                ? null
+                : _pickupContactPhoneController.text.trim(),
+            scheduledPickupDate: _scheduledPickupDate,
             receiverName: _nameController.text.trim(),
             receiverPhoneNumber: _phoneController.text.trim(),
             receiverEmail: _emailController.text.trim().isEmpty
@@ -365,6 +485,37 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
                         onTap: _pickDeliveryLocation,
                       ),
                       const SizedBox(height: 24),
+                      Text(
+                        'Pickup',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 10),
+                      _PickupSummaryField(
+                        summary: _pickupSummary,
+                        onTap: _choosePickupLocation,
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        controller: _pickupContactNameController,
+                        label: 'Pickup contact (optional)',
+                        hint: 'Defaults to you',
+                        textCapitalization: TextCapitalization.words,
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        controller: _pickupContactPhoneController,
+                        label: 'Pickup contact phone (optional)',
+                        hint: 'Defaults to your number',
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 12),
+                      _ScheduledPickupField(
+                        date: _scheduledPickupDate,
+                        onTap: _pickScheduledDate,
+                        onClear: () =>
+                            setState(() => _scheduledPickupDate = null),
+                      ),
+                      const SizedBox(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -485,6 +636,279 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
   }
 }
 
+sealed class _PickupSelection {
+  const _PickupSelection();
+}
+
+class _ShopDefaultSelection extends _PickupSelection {
+  const _ShopDefaultSelection();
+}
+
+class _SavedLocationSelection extends _PickupSelection {
+  const _SavedLocationSelection(this.location);
+
+  final SavedLocation location;
+}
+
+class _CustomLocationSelection extends _PickupSelection {
+  const _CustomLocationSelection();
+}
+
+class _PickupSummaryField extends StatelessWidget {
+  const _PickupSummaryField({required this.summary, required this.onTap});
+
+  final String summary;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: context.colors.cardAlt,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Icon(LucideIcons.store, size: 18, color: context.colors.text),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                summary,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13.5),
+              ),
+            ),
+            Icon(
+              LucideIcons.chevronRight,
+              size: 18,
+              color: context.colors.textMuted,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ScheduledPickupField extends StatelessWidget {
+  const _ScheduledPickupField({
+    required this.date,
+    required this.onTap,
+    required this.onClear,
+  });
+
+  final DateTime? date;
+  final VoidCallback onTap;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: context.colors.cardAlt,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Icon(LucideIcons.calendarClock, size: 18, color: context.colors.text),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                date == null
+                    ? 'Pickup date: as soon as possible'
+                    : 'Pickup date: ${DateFormat('MMM d, y').format(date!)}',
+                style: const TextStyle(fontSize: 13.5),
+              ),
+            ),
+            if (date != null)
+              IconButton(
+                onPressed: onClear,
+                icon: const Icon(LucideIcons.x, size: 16),
+                visualDensity: VisualDensity.compact,
+              )
+            else
+              Icon(
+                LucideIcons.chevronRight,
+                size: 18,
+                color: context.colors.textMuted,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PickupLocationSheet extends ConsumerWidget {
+  const _PickupLocationSheet({
+    required this.currentMode,
+    required this.currentSavedLocation,
+  });
+
+  final _PickupMode currentMode;
+  final SavedLocation? currentSavedLocation;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final shopLocation = ref.watch(authControllerProvider).user?.shopLocation;
+    final savedLocations = ref.watch(savedLocationsProvider);
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Choose pickup location',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            if (shopLocation != null)
+              _PickupOptionTile(
+                icon: LucideIcons.store,
+                title: 'Shop location',
+                subtitle: shopLocation.addressLine,
+                selected: currentMode == _PickupMode.shopDefault,
+                onTap: () => Navigator.of(
+                  context,
+                ).pop(const _ShopDefaultSelection()),
+              ),
+            savedLocations.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              ),
+              error: (_, _) => const SizedBox.shrink(),
+              data: (locations) => Column(
+                children: [
+                  for (final location in locations)
+                    _PickupOptionTile(
+                      icon: LucideIcons.mapPin,
+                      title: location.label ?? location.addressLine,
+                      subtitle: location.addressLine,
+                      selected:
+                          currentMode == _PickupMode.saved &&
+                          currentSavedLocation?.id == location.id,
+                      onTap: () => Navigator.of(
+                        context,
+                      ).pop(_SavedLocationSelection(location)),
+                    ),
+                ],
+              ),
+            ),
+            _PickupOptionTile(
+              icon: LucideIcons.mapPinned,
+              title: 'Pick a one-off location',
+              subtitle: 'Not saved to your address book',
+              selected: currentMode == _PickupMode.custom,
+              onTap: () => Navigator.of(
+                context,
+              ).pop(const _CustomLocationSelection()),
+            ),
+            const SizedBox(height: 4),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const SavedAddressesPage(),
+                  ),
+                );
+              },
+              icon: const Icon(LucideIcons.settings2, size: 16),
+              label: const Text('Manage saved addresses'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PickupOptionTile extends StatelessWidget {
+  const _PickupOptionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.16)
+              : context.colors.cardAlt,
+          borderRadius: BorderRadius.circular(14),
+          border: selected
+              ? Border.all(color: AppColors.primary, width: 1.5)
+              : null,
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: context.colors.text),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.colors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (selected)
+              const Icon(LucideIcons.check, size: 18, color: AppColors.primary),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _LocationPickerField extends StatelessWidget {
   const _LocationPickerField({required this.location, required this.onTap});
 
@@ -519,7 +943,7 @@ class _LocationPickerField extends StatelessWidget {
             child: Column(
               children: [
                 if (location != null) ...[
-                  GoogleLocationPreview(location: location!),
+                  LocationPreview(location: location!),
                   const SizedBox(height: 12),
                 ],
                 Row(

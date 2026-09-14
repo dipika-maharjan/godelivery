@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../core/constants/nepal_geo.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/location.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/app_text_field.dart';
-import '../../widgets/google_location_picker.dart';
+import '../../widgets/city_province_fields.dart';
+import '../../widgets/location_picker.dart';
 import '../../widgets/primary_button.dart';
 
 class PersonalDetailsArgs {
@@ -41,6 +43,8 @@ class _PersonalDetailsPageState extends ConsumerState<PersonalDetailsPage> {
   final _emailController = TextEditingController();
 
   PickedLocation? _pickedLocation;
+  String _city = NepalGeo.defaultCity;
+  String _province = NepalGeo.defaultProvince;
   bool _submitting = false;
 
   @override
@@ -57,7 +61,7 @@ class _PersonalDetailsPageState extends ConsumerState<PersonalDetailsPage> {
       _pickedLocation != null;
 
   Future<void> _pickLocation() async {
-    final picked = await GoogleLocationPicker.pickLocation(
+    final picked = await LocationPicker.pickLocation(
       context,
       initialLocation: _pickedLocation,
     );
@@ -82,6 +86,9 @@ class _PersonalDetailsPageState extends ConsumerState<PersonalDetailsPage> {
                 : _emailController.text.trim(),
             shopLocation: LocationInput(
               addressLine: location.address ?? location.name ?? 'Shop location',
+              city: _city,
+              state: _province,
+              country: 'Nepal',
               latitude: location.latitude,
               longitude: location.longitude,
             ),
@@ -198,6 +205,13 @@ class _PersonalDetailsPageState extends ConsumerState<PersonalDetailsPage> {
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: 16),
+            CityProvinceFields(
+              city: _city,
+              province: _province,
+              onCityChanged: (value) => setState(() => _city = value),
+              onProvinceChanged: (value) => setState(() => _province = value),
             ),
             const SizedBox(height: 32),
             PrimaryButton(

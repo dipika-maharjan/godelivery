@@ -16,6 +16,145 @@
         ]
       }
     },
+    "/locations": {
+      "post": {
+        "description": "The first saved location automatically becomes the default. Used during order creation to pick a pickup point other than the shop location.",
+        "operationId": "LocationsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSavedLocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedLocationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Save a pickup location to my address book",
+        "tags": [
+          "locations"
+        ]
+      },
+      "get": {
+        "operationId": "LocationsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SavedLocationResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List my saved pickup locations, default first",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/locations/{id}": {
+      "patch": {
+        "operationId": "LocationsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedLocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedLocationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Update one of my saved pickup locations, or set it as the default",
+        "tags": [
+          "locations"
+        ]
+      },
+      "delete": {
+        "operationId": "LocationsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Remove a saved pickup location",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
     "/auth/otp/request": {
       "post": {
         "operationId": "AuthController_requestOtp",
@@ -405,6 +544,44 @@
           }
         ],
         "summary": "List every account on the platform, with order/delivery counts (admin)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/admins": {
+      "post": {
+        "description": "No OTP signup involved — phoneVerifiedAt is set up front, same as rider onboarding, so the new admin's first OTP verification logs them straight in. Only works for a phone number with no existing account.",
+        "operationId": "UsersController_createAdmin",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Create another admin account (admin)",
         "tags": [
           "users"
         ]
@@ -835,6 +1012,150 @@
         ]
       }
     },
+    "/riders/me/bank-account": {
+      "get": {
+        "operationId": "RidersController_getOwnBankAccount",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get my payout bank details",
+        "tags": [
+          "riders"
+        ]
+      },
+      "put": {
+        "operationId": "RidersController_upsertOwnBankAccount",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertBankAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Submit or update my payout bank details",
+        "tags": [
+          "riders"
+        ]
+      }
+    },
+    "/riders/me/location-history": {
+      "get": {
+        "operationId": "RidersController_meLocationHistory",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "ISO datetime lower bound",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "ISO datetime upper bound",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RiderLocationPingResponseDto"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMetaDto"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "My own GPS breadcrumb trail, optionally bounded by from/to",
+        "tags": [
+          "riders"
+        ]
+      }
+    },
     "/riders/{id}": {
       "get": {
         "operationId": "RidersController_findOne",
@@ -910,6 +1231,42 @@
           }
         ],
         "summary": "Update a rider — vehicle info or suspend/reactivate (admin)",
+        "tags": [
+          "riders"
+        ]
+      }
+    },
+    "/riders/{id}/bank-account": {
+      "get": {
+        "operationId": "RidersController_getBankAccountForAdmin",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "View a rider's payout bank details (admin)",
         "tags": [
           "riders"
         ]
@@ -1038,6 +1395,281 @@
         "summary": "Delivery count and average pickup-to-delivery duration for a rider (admin)",
         "tags": [
           "riders"
+        ]
+      }
+    },
+    "/riders/{id}/unpaid-deliveries": {
+      "get": {
+        "operationId": "RidersController_unpaidDeliveries",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiderUnpaidDeliveriesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Delivered orders not yet covered by a pending/paid payout, and the total owed (admin)",
+        "tags": [
+          "riders"
+        ]
+      }
+    },
+    "/payouts": {
+      "post": {
+        "description": "Record-keeping only — no bank transfer is triggered. Covers the given DELIVERED orders; each must not already belong to a pending/paid payout.",
+        "operationId": "PayoutsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePayoutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Create a payout batch for a rider (admin)",
+        "tags": [
+          "payouts"
+        ]
+      },
+      "get": {
+        "operationId": "PayoutsController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "riderId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "PAID",
+                "FAILED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PayoutResponseDto"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMetaDto"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List payouts, optionally filtered by rider/status (admin)",
+        "tags": [
+          "payouts"
+        ]
+      }
+    },
+    "/payouts/{id}": {
+      "get": {
+        "operationId": "PayoutsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get a payout (admin)",
+        "tags": [
+          "payouts"
+        ]
+      }
+    },
+    "/payouts/{id}/mark-paid": {
+      "post": {
+        "operationId": "PayoutsController_markPaid",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Mark a pending payout as paid, after transferring the funds manually (admin)",
+        "tags": [
+          "payouts"
+        ]
+      }
+    },
+    "/payouts/{id}/mark-failed": {
+      "post": {
+        "operationId": "PayoutsController_markFailed",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkPayoutFailedDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Mark a pending payout as failed — its orders become eligible for a new payout (admin)",
+        "tags": [
+          "payouts"
         ]
       }
     },
@@ -1450,6 +2082,15 @@
                 "RETURNED"
               ]
             }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Filter by tracking number (partial, case-insensitive) — e.g. from a barcode scan",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1582,6 +2223,22 @@
           }
         },
         "summary": "Preview the invoice PDF design against synthetic sample data",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/orders/test-label-pdf": {
+      "get": {
+        "description": "No auth, no database read, no real order — a new random tracking number every call. Purely for eyeballing/testing the label layout.",
+        "operationId": "OrdersController_getSampleLabelPdf",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Preview the 6x4in shipping label design against synthetic sample data",
         "tags": [
           "orders"
         ]
@@ -1771,6 +2428,36 @@
           }
         ],
         "summary": "Download/preview the order invoice PDF directly",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/orders/{id}/label/pdf": {
+      "get": {
+        "description": "Includes a Code128 barcode of the tracking number so a warehouse/admin barcode scanner can look the order up directly.",
+        "operationId": "OrdersController_getLabelPdf",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Download/print a 6x4in shipping label for this order (admin)",
         "tags": [
           "orders"
         ]
@@ -3046,6 +3733,283 @@
           "api-keys"
         ]
       }
+    },
+    "/partners/branches": {
+      "get": {
+        "description": "This reuses the existing warehouse service instead of creating a separate warehouse implementation.",
+        "operationId": "ThirdPartyController_listBranches",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api-key": []
+          }
+        ],
+        "summary": "List available branches / warehouses for third-party clients",
+        "tags": [
+          "third-party"
+        ]
+      }
+    },
+    "/partners/calculate-price": {
+      "post": {
+        "description": "This calls the existing pricing service so that external integrations always get the same price logic as the main app.",
+        "operationId": "ThirdPartyController_calculatePrice",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalculatePriceRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalculatePriceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api-key": []
+          }
+        ],
+        "summary": "Calculate delivery price using the app’s real pricing rules",
+        "tags": [
+          "third-party"
+        ]
+      }
+    },
+    "/partners/orders": {
+      "post": {
+        "description": "This is a thin external wrapper around the real order creation flow. We do not duplicate business logic here.",
+        "operationId": "ThirdPartyController_createOrder",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateThirdPartyOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThirdPartyOrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api-key": []
+          }
+        ],
+        "summary": "Create a shipment using third-party API key auth",
+        "tags": [
+          "third-party"
+        ]
+      },
+      "get": {
+        "description": "This delegates to the existing order list logic, so order permissions and filtering remain consistent with the core app.",
+        "operationId": "ThirdPartyController_listOrders",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "all",
+              "type": "string",
+              "enum": [
+                "sent",
+                "received",
+                "assigned",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "CONFIRMED",
+                "PICKED_UP",
+                "IN_TRANSIT",
+                "AT_WAREHOUSE",
+                "OUT_FOR_DELIVERY",
+                "DELIVERED_PENDING_VERIFICATION",
+                "DELIVERED",
+                "FAILED_DELIVERY",
+                "CANCELLED",
+                "RETURNED"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Filter by tracking number (partial, case-insensitive) — e.g. from a barcode scan",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ThirdPartyOrderResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api-key": []
+          }
+        ],
+        "summary": "List orders for the authenticated API key",
+        "tags": [
+          "third-party"
+        ]
+      }
+    },
+    "/partners/orders/{id}": {
+      "get": {
+        "description": "We call the existing authorization-aware order fetch logic instead of writing a second permission system.",
+        "operationId": "ThirdPartyController_getOrder",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThirdPartyOrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api-key": []
+          }
+        ],
+        "summary": "Get one order detail",
+        "tags": [
+          "third-party"
+        ]
+      }
+    },
+    "/partners/orders/{id}/cancel": {
+      "post": {
+        "description": "This is a thin wrapper around the real cancel flow. We do not rebuild cancellation logic in a separate route.",
+        "operationId": "ThirdPartyController_cancelOrder",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThirdPartyOrderResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api-key": []
+          }
+        ],
+        "summary": "Cancel an order",
+        "tags": [
+          "third-party"
+        ]
+      }
     }
   },
   "info": {
@@ -3070,6 +4034,155 @@
       }
     },
     "schemas": {
+      "CreateSavedLocationDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Friendly label, e.g. \"Main shop\", \"Home\""
+          },
+          "addressLine": {
+            "type": "string"
+          },
+          "landmark": {
+            "type": "string",
+            "description": "Nearest recognizable landmark, e.g. \"Near City Hospital\""
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "placeId": {
+            "type": "string",
+            "description": "Google Maps place_id, when picked from the map"
+          },
+          "formattedAddress": {
+            "type": "string",
+            "description": "Google Maps formatted_address, when picked from the map"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Make this your default pickup location. The first saved location becomes the default automatically."
+          }
+        },
+        "required": [
+          "addressLine",
+          "latitude",
+          "longitude"
+        ]
+      },
+      "SavedLocationResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressLine": {
+            "type": "string"
+          },
+          "landmark": {
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "state": {
+            "type": "string",
+            "nullable": true
+          },
+          "postalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "country": {
+            "type": "string",
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "addressLine",
+          "latitude",
+          "longitude",
+          "isDefault",
+          "createdAt"
+        ]
+      },
+      "UpdateSavedLocationDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "addressLine": {
+            "type": "string"
+          },
+          "landmark": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "placeId": {
+            "type": "string"
+          },
+          "formattedAddress": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Make this your default pickup location"
+          }
+        }
+      },
       "RequestOtpDto": {
         "type": "object",
         "properties": {
@@ -3488,6 +4601,25 @@
           "sentOrdersCount",
           "receivedOrdersCount",
           "riderOrdersCount"
+        ]
+      },
+      "CreateAdminDto": {
+        "type": "object",
+        "properties": {
+          "phoneNumber": {
+            "type": "string",
+            "example": "+9779800000000"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "phoneNumber",
+          "name"
         ]
       },
       "UserResponseDto": {
@@ -3940,31 +5072,65 @@
           "longitude"
         ]
       },
-      "AdminUpdateRiderDto": {
+      "BankAccountResponseDto": {
         "type": "object",
         "properties": {
-          "name": {
+          "id": {
             "type": "string"
           },
-          "vehicleType": {
+          "bankName": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "accountNumber": {
+            "type": "string"
+          },
+          "branch": {
             "type": "string",
-            "enum": [
-              "ON_FOOT",
-              "BICYCLE",
-              "MOTORBIKE",
-              "CAR",
-              "VAN",
-              "TRUCK"
-            ]
+            "nullable": true
           },
-          "vehiclePlateNumber": {
+          "createdAt": {
+            "format": "date-time",
             "type": "string"
           },
-          "isActive": {
-            "type": "boolean",
-            "description": "Suspend (false) or reactivate (true) this rider"
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
           }
-        }
+        },
+        "required": [
+          "id",
+          "bankName",
+          "accountName",
+          "accountNumber",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "UpsertBankAccountDto": {
+        "type": "object",
+        "properties": {
+          "bankName": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string",
+            "description": "Name on the bank account — may differ from the rider profile name"
+          },
+          "accountNumber": {
+            "type": "string"
+          },
+          "branch": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bankName",
+          "accountName",
+          "accountNumber"
+        ]
       },
       "RiderLocationPingResponseDto": {
         "type": "object",
@@ -4005,6 +5171,32 @@
           "longitude",
           "recordedAt"
         ]
+      },
+      "AdminUpdateRiderDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "ON_FOOT",
+              "BICYCLE",
+              "MOTORBIKE",
+              "CAR",
+              "VAN",
+              "TRUCK"
+            ]
+          },
+          "vehiclePlateNumber": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Suspend (false) or reactivate (true) this rider"
+          }
+        }
       },
       "RiderCurrentOrderDto": {
         "type": "object",
@@ -4050,6 +5242,210 @@
         "required": [
           "totalDeliveries"
         ]
+      },
+      "UnpaidOrderResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "trackingNumber": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "deliveredAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "trackingNumber",
+          "amount",
+          "currency",
+          "deliveredAt"
+        ]
+      },
+      "RiderUnpaidDeliveriesResponseDto": {
+        "type": "object",
+        "properties": {
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnpaidOrderResponseDto"
+            }
+          },
+          "totalAmountOwed": {
+            "type": "string",
+            "description": "Sum of `amount` across all listed orders"
+          },
+          "currency": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "orders",
+          "totalAmountOwed",
+          "currency"
+        ]
+      },
+      "CreatePayoutDto": {
+        "type": "object",
+        "properties": {
+          "riderId": {
+            "type": "string",
+            "description": "The rider being paid out — must be a User with role RIDER"
+          },
+          "orderIds": {
+            "description": "Ids of this rider's DELIVERED orders to include in the payout. Each must not already belong to a PENDING/PAID payout.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "referenceNote": {
+            "type": "string",
+            "description": "Free-text note, e.g. a bank transfer reference"
+          }
+        },
+        "required": [
+          "riderId",
+          "orderIds"
+        ]
+      },
+      "PayoutRiderDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phoneNumber"
+        ]
+      },
+      "PayoutProcessedByDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "PayoutOrderLineResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "trackingNumber": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "trackingNumber",
+          "amount"
+        ]
+      },
+      "PayoutResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "rider": {
+            "$ref": "#/components/schemas/PayoutRiderDto"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PAID",
+              "FAILED"
+            ]
+          },
+          "processedBy": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PayoutProcessedByDto"
+              }
+            ]
+          },
+          "paidAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "referenceNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PayoutOrderLineResponseDto"
+            }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "rider",
+          "amount",
+          "currency",
+          "status",
+          "orders",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "MarkPayoutFailedDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Why the transfer failed — appended to the payout's reference note"
+          }
+        }
       },
       "CoordinatesDto": {
         "type": "object",
@@ -4410,13 +5806,29 @@
             "type": "number",
             "description": "Cash amount the rider should collect from the receiver for the goods themselves, separate from the delivery charge. Leave unset if nothing needs to be collected from the receiver on delivery."
           },
+          "pickupLocationId": {
+            "type": "string",
+            "description": "Id of one of the sender's saved pickup locations (see GET /locations). Takes precedence over pickupLocation. Defaults to the sender's registered shop location if neither is given."
+          },
           "pickupLocation": {
-            "description": "Pickup point for this order. Defaults to the sender's registered shop location.",
+            "description": "One-off pickup point for this order, not saved to the address book. Ignored if pickupLocationId is given. Defaults to the sender's registered shop location.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/LocationInputDto"
               }
             ]
+          },
+          "pickupContactName": {
+            "type": "string",
+            "description": "Contact person to reach at the pickup location, if different from the sender. Defaults to the sender."
+          },
+          "pickupContactPhone": {
+            "type": "string",
+            "description": "Phone number for the pickup contact person. Defaults to the sender."
+          },
+          "scheduledPickupDate": {
+            "type": "string",
+            "description": "ISO date (YYYY-MM-DD) the sender wants pickup to happen on. Omit for as-soon-as-possible."
           },
           "receiver": {
             "$ref": "#/components/schemas/ReceiverInputDto"
@@ -4569,6 +5981,16 @@
             "type": "string",
             "nullable": true
           },
+          "latitude": {
+            "type": "number",
+            "nullable": true,
+            "description": "GPS latitude the actor was at when this event was recorded"
+          },
+          "longitude": {
+            "type": "number",
+            "nullable": true,
+            "description": "GPS longitude the actor was at when this event was recorded"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -4684,6 +6106,21 @@
           },
           "deliveryLocation": {
             "$ref": "#/components/schemas/LocationResponseDto"
+          },
+          "pickupContactName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Who the pickup rider should contact at the pickup location"
+          },
+          "pickupContactPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "scheduledPickupDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "Date the sender wants pickup to happen on; null means as soon as possible"
           },
           "distanceKm": {
             "type": "number"
@@ -4931,6 +6368,14 @@
           "location": {
             "type": "string",
             "example": "Kathmandu sorting hub"
+          },
+          "latitude": {
+            "type": "number",
+            "description": "The actor's current GPS latitude, if available — stamps where this handoff actually happened"
+          },
+          "longitude": {
+            "type": "number",
+            "description": "The actor's current GPS longitude, if available"
           }
         },
         "required": [
@@ -5491,6 +6936,212 @@
           "keyPrefix",
           "secret",
           "scopes"
+        ]
+      },
+      "CalculatePriceRequestDto": {
+        "type": "object",
+        "properties": {
+          "pickup": {
+            "$ref": "#/components/schemas/CoordinatesDto"
+          },
+          "delivery": {
+            "$ref": "#/components/schemas/CoordinatesDto"
+          },
+          "totalWeightKg": {
+            "type": "number"
+          },
+          "hasDangerousGoods": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "pickup",
+          "delivery",
+          "totalWeightKg"
+        ]
+      },
+      "CalculatePriceResponseDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "distanceKm": {
+            "type": "number"
+          },
+          "breakdown": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "amount",
+          "currency",
+          "distanceKm",
+          "breakdown"
+        ]
+      },
+      "ThirdPartyLocationDto": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "addressLine1": {
+            "type": "string"
+          },
+          "addressLine2": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude",
+          "addressLine1"
+        ]
+      },
+      "ThirdPartyReceiverDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "location": {
+            "$ref": "#/components/schemas/ThirdPartyLocationDto"
+          }
+        },
+        "required": [
+          "name",
+          "phoneNumber",
+          "location"
+        ]
+      },
+      "ThirdPartyPackageDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "weightKg": {
+            "type": "number"
+          },
+          "isDangerous": {
+            "type": "boolean",
+            "default": false
+          },
+          "imageAssetIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "weightKg"
+        ]
+      },
+      "CreateThirdPartyOrderDto": {
+        "type": "object",
+        "properties": {
+          "senderName": {
+            "type": "string"
+          },
+          "payer": {
+            "type": "string",
+            "enum": [
+              "SENDER",
+              "RECEIVER"
+            ],
+            "default": "SENDER"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "COD",
+              "BANK_TRANSFER",
+              "ESEWA",
+              "KHALTI",
+              "FONEPAY",
+              "CONNECTIPS"
+            ],
+            "default": "COD"
+          },
+          "codAmount": {
+            "type": "number"
+          },
+          "pickupLocation": {
+            "$ref": "#/components/schemas/ThirdPartyLocationDto"
+          },
+          "receiver": {
+            "$ref": "#/components/schemas/ThirdPartyReceiverDto"
+          },
+          "packages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ThirdPartyPackageDto"
+            }
+          }
+        },
+        "required": [
+          "receiver",
+          "packages"
+        ]
+      },
+      "ThirdPartyOrderResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "trackingNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "trackingNumber",
+          "status",
+          "amount",
+          "currency",
+          "createdAt"
         ]
       }
     }
