@@ -63,6 +63,10 @@ dependencies:
   package_info_plus: ^8.1.0
   geolocator: ">=13.0.2 <15.0.0"
   otp_autofill: ^4.1.0
+  printing: ^5.15.0
+  share_plus: ^12.0.2
+  path_provider: ^2.1.6
+  quick_actions: ^1.1.1
 
 flutter_launcher_icons:
   android: true

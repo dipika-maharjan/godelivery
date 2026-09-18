@@ -9,6 +9,7 @@ import '../../../models/rider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../widgets/app_text_field.dart';
+import '../../../widgets/sheet_header.dart';
 
 class RiderProfilePage extends ConsumerStatefulWidget {
   const RiderProfilePage({super.key});
@@ -285,7 +286,7 @@ class _EditVehicleSheetState extends State<_EditVehicleSheet> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.only(
           left: 20,
           right: 20,
@@ -296,7 +297,7 @@ class _EditVehicleSheetState extends State<_EditVehicleSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Edit vehicle info', style: Theme.of(context).textTheme.titleMedium),
+            const SheetHeader(title: 'Edit vehicle info'),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -390,7 +391,7 @@ class _EditBankAccountSheetState extends State<_EditBankAccountSheet> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.only(
           left: 20,
           right: 20,
@@ -401,7 +402,7 @@ class _EditBankAccountSheetState extends State<_EditBankAccountSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Bank account', style: Theme.of(context).textTheme.titleMedium),
+            const SheetHeader(title: 'Bank account'),
             const SizedBox(height: 12),
             AppTextField(controller: _bankNameController, label: 'Bank name'),
             const SizedBox(height: 12),

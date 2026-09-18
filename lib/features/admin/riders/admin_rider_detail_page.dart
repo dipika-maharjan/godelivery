@@ -8,6 +8,7 @@ import '../../../data/riders_repository.dart';
 import '../../../models/rider.dart';
 import '../../../providers/admin_riders_provider.dart';
 import '../../../widgets/app_text_field.dart';
+import '../../../widgets/sheet_header.dart';
 
 class AdminRiderDetailPage extends ConsumerStatefulWidget {
   const AdminRiderDetailPage({super.key, required this.riderId});
@@ -356,7 +357,7 @@ class _EditVehicleSheetState extends State<_EditVehicleSheet> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.only(
           left: 20,
           right: 20,
@@ -367,7 +368,7 @@ class _EditVehicleSheetState extends State<_EditVehicleSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Edit vehicle info', style: Theme.of(context).textTheme.titleMedium),
+            const SheetHeader(title: 'Edit vehicle info'),
             const SizedBox(height: 12),
             AppTextField(controller: _nameController, label: 'Name'),
             const SizedBox(height: 12),

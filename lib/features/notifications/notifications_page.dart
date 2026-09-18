@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +8,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/notification.dart';
+import '../../models/user.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/notifications_provider.dart';
 
 class NotificationsPage extends ConsumerWidget {
@@ -21,8 +24,10 @@ class NotificationsPage extends ConsumerWidget {
         title: const Text('Notifications'),
         actions: [
           TextButton(
-            onPressed: () =>
-                ref.read(notificationsListProvider.notifier).markAllRead(),
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              ref.read(notificationsListProvider.notifier).markAllRead();
+            },
             child: const Text('Mark all read'),
           ),
         ],
@@ -54,8 +59,16 @@ class NotificationsPage extends ConsumerWidget {
                               .read(notificationsListProvider.notifier)
                               .markRead(notification.id);
                         }
-                        if (notification.orderId != null) {
-                          context.push('/orders/${notification.orderId}');
+                        final orderId = notification.orderId;
+                        if (orderId != null) {
+                          final role = ref.read(authControllerProvider).user?.role;
+                          context.push(
+                            switch (role) {
+                              UserRole.rider => '/rider/orders/$orderId',
+                              UserRole.admin => '/admin/orders/$orderId',
+                              _ => '/orders/$orderId',
+                            },
+                          );
                         }
                       },
                     );

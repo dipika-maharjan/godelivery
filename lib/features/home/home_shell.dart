@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -6,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/notifications/push_notifications_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/notifications_provider.dart';
+import '../../providers/quick_action_provider.dart';
 import '../orders/create_order_sheet.dart';
 import 'account_tab.dart';
 import 'shipments_tab.dart';
@@ -33,7 +35,24 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     // once the user actually lands on Home, rather than at cold start.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(pushNotificationsServiceProvider).initialize();
+      // A quick action tapped before this shell existed (e.g. a cold start
+      // that still had to resolve auth) is sitting in the provider already —
+      // `ref.listen` below only fires on later changes, so handle it here.
+      _handleQuickAction(ref.read(pendingQuickActionProvider));
     });
+  }
+
+  void _handleQuickAction(QuickAction? action) {
+    if (action == null) return;
+    switch (action) {
+      case QuickAction.track:
+        _goToTab(HomeTab.track);
+      case QuickAction.shipments:
+        _goToTab(HomeTab.shipments);
+      case QuickAction.newShipment:
+        _openCreateOrder();
+    }
+    ref.read(pendingQuickActionProvider.notifier).state = null;
   }
 
   @override
@@ -52,6 +71,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   }
 
   void _goToTab(HomeTab tab) {
+    if (tab != _tab) HapticFeedback.selectionClick();
     setState(() => _tab = tab);
     _pageController.animateToPage(
       tab.index,
@@ -62,6 +82,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<QuickAction?>(
+      pendingQuickActionProvider,
+      (previous, next) => _handleQuickAction(next),
+    );
     return Scaffold(
       body: Stack(
         children: [

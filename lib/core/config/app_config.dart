@@ -6,7 +6,8 @@ class AppConfig {
   /// and desktop/web. On an Android emulator, use `http://10.0.2.2:3000`
   /// instead; on a physical device, use your machine's LAN IP.
   // static const String baseUrl = 'https://zsljfc89-3000.inc1.devtunnels.ms';
-  static const String baseUrl = 'https://api.godelivery.godokan.com';
+  //   static const String baseUrl = 'https://api.godelivery.godokan.com';
+  static const String baseUrl = 'http://192.168.101.8:3000';
   // static const String baseUrl = 'https://xw4p2nm8-3000.inc1.devtunnels.ms/';
   // static const String baseUrl = 'https://192.168.101.14';
   // static const String baseUrl = 'http://localhost:3000';

@@ -8,7 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/device_repository.dart';
 import '../../models/device.dart';
+import '../../models/user.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/notifications_provider.dart';
+import '../../providers/rider_jobs_provider.dart';
 import '../router/app_router.dart';
 import '../storage/device_storage.dart';
 
@@ -65,6 +68,33 @@ Future<void> _showLocalNotification(RemoteMessage message) async {
   );
 }
 
+/// Routes a tapped notification's order to the right detail page for the
+/// signed-in user's role — riders and admins have their own order detail
+/// routes with role-specific actions (accept/pick up/deliver, assign rider).
+void _navigateToOrder(Ref ref, String? orderId) {
+  final router = ref.read(routerProvider);
+  final role = ref.read(authControllerProvider).user?.role;
+  if (orderId == null || orderId.isEmpty) {
+    switch (role) {
+      case UserRole.rider:
+        router.push('/rider/notifications');
+      case UserRole.admin:
+        router.push('/admin/notifications');
+      default:
+        router.push('/home/notifications');
+    }
+    return;
+  }
+  switch (role) {
+    case UserRole.rider:
+      router.push('/rider/orders/$orderId');
+    case UserRole.admin:
+      router.push('/admin/orders/$orderId');
+    default:
+      router.push('/orders/$orderId');
+  }
+}
+
 bool _localNotificationsInitialized = false;
 
 /// Set from [PushNotificationsService]'s constructor so a tap on a
@@ -79,17 +109,20 @@ Future<void> _initLocalNotifications() async {
   await _localNotificationsPlugin.initialize(
     const InitializationSettings(
       android: AndroidInitializationSettings(_androidNotificationIcon),
+      // Permission is already requested (cross-platform) via
+      // FirebaseMessaging.requestPermission() in
+      // PushNotificationsService.initialize() before this runs — don't
+      // also trigger flutter_local_notifications' own native iOS prompt.
+      iOS: DarwinInitializationSettings(
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
+      ),
     ),
     onDidReceiveNotificationResponse: (response) {
       final ref = _serviceRef;
       if (ref == null) return;
-      final orderId = response.payload;
-      final router = ref.read(routerProvider);
-      if (orderId != null && orderId.isNotEmpty) {
-        router.push('/orders/$orderId');
-      } else {
-        router.push('/home/notifications');
-      }
+      _navigateToOrder(ref, response.payload);
     },
   );
 
@@ -163,6 +196,11 @@ class PushNotificationsService {
         FirebaseMessaging.onMessage.listen((message) {
           _ref.invalidate(unreadCountProvider);
           _ref.invalidate(notificationsListProvider);
+          // A rider/pickup assignment push means the rider's job lists are
+          // now stale — those providers are built once at login and never
+          // refetch on their own, so nudge them here too.
+          _ref.invalidate(riderAssignedOrdersProvider);
+          _ref.invalidate(availableJobsProvider);
           // Neither a notification- nor data-payload push is ever shown by
           // the OS while the app is in the foreground — always build it.
           _showLocalNotification(message);
@@ -228,12 +266,6 @@ class PushNotificationsService {
   }
 
   void _handleTap(RemoteMessage message) {
-    final orderId = message.data['orderId'] as String?;
-    final router = _ref.read(routerProvider);
-    if (orderId != null) {
-      router.push('/orders/$orderId');
-    } else {
-      router.push('/home/notifications');
-    }
+    _navigateToOrder(_ref, message.data['orderId'] as String?);
   }
 }

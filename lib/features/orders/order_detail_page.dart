@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/payment_display.dart';
+import '../../core/utils/share_helper.dart';
 import '../../core/utils/status_display.dart';
 import '../../data/order_repository.dart';
 import '../../models/location.dart';
@@ -14,6 +15,10 @@ import '../../providers/auth_provider.dart';
 import '../../providers/orders_provider.dart';
 import '../../widgets/order_status_chip.dart';
 import '../../widgets/location_picker.dart';
+import '../../widgets/package_flags_row.dart';
+import '../../widgets/pdf_viewer_page.dart';
+
+const _trackingWebBaseUrl = 'https://godelivery.godokan.com/track';
 
 class OrderDetailPage extends ConsumerWidget {
   const OrderDetailPage({super.key, required this.orderId});
@@ -25,7 +30,25 @@ class OrderDetailPage extends ConsumerWidget {
     final order = ref.watch(orderDetailProvider(orderId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Shipment')),
+      appBar: AppBar(
+        title: const Text('Shipment'),
+        actions: [
+          ...order.maybeWhen(
+            data: (value) => [
+              IconButton(
+                tooltip: 'Share',
+                onPressed: () => shareText(
+                  'Track my GoDelivery shipment ${value.trackingNumber}: '
+                  '$_trackingWebBaseUrl/${value.trackingNumber}',
+                  subject: 'GoDelivery tracking',
+                ),
+                icon: const Icon(LucideIcons.share2),
+              ),
+            ],
+            orElse: () => const [],
+          ),
+        ],
+      ),
       body: order.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
@@ -181,7 +204,25 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
         ),
         const SizedBox(height: 10),
         _PaymentSummary(order: order),
-        const SizedBox(height: 20),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => PdfViewerPage(
+                  title: 'Invoice',
+                  fileName: '${order.trackingNumber}-invoice.pdf',
+                  loadBytes: () =>
+                      ref.read(orderRepositoryProvider).getInvoicePdf(order.id),
+                ),
+              ),
+            ),
+            icon: const Icon(LucideIcons.fileText, size: 16),
+            label: const Text('View invoice'),
+          ),
+        ),
+        const SizedBox(height: 10),
         _AddressCard(
           icon: LucideIcons.userRound,
           label: 'Sender',
@@ -264,21 +305,31 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
         ...order.packages.map(
           (p) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  LucideIcons.package,
-                  size: 16,
-                  color: context.colors.textMuted,
+                Row(
+                  children: [
+                    Icon(
+                      LucideIcons.package,
+                      size: 16,
+                      color: context.colors.textMuted,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(p.name)),
+                    Text(
+                      '${p.weightKg} kg',
+                      style: TextStyle(
+                        color: context.colors.textMuted,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(child: Text(p.name)),
-                Text(
-                  '${p.weightKg} kg',
-                  style: TextStyle(
-                    color: context.colors.textMuted,
-                    fontSize: 12.5,
-                  ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 24),
+                  child: PackageFlagsRow(package: p),
                 ),
               ],
             ),

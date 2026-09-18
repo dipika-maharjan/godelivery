@@ -15,6 +15,9 @@ import '../../../providers/admin_riders_provider.dart';
 import '../../../providers/orders_provider.dart';
 import '../../../widgets/app_text_field.dart';
 import '../../../widgets/order_status_chip.dart';
+import '../../../widgets/package_flags_row.dart';
+import '../../../widgets/pdf_viewer_page.dart';
+import '../../../widgets/sheet_header.dart';
 
 const _terminalStatuses = {
   OrderStatus.delivered,
@@ -237,14 +240,24 @@ class _AdminOrderDetailBodyState extends ConsumerState<_AdminOrderDetailBody> {
         ...order.packages.map(
           (p) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(LucideIcons.package, size: 16, color: context.colors.textMuted),
-                const SizedBox(width: 8),
-                Expanded(child: Text(p.name)),
-                Text(
-                  '${p.weightKg} kg',
-                  style: TextStyle(color: context.colors.textMuted, fontSize: 12.5),
+                Row(
+                  children: [
+                    Icon(LucideIcons.package, size: 16, color: context.colors.textMuted),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(p.name)),
+                    Text(
+                      '${p.weightKg} kg',
+                      style: TextStyle(color: context.colors.textMuted, fontSize: 12.5),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 24),
+                  child: PackageFlagsRow(package: p),
                 ),
               ],
             ),
@@ -257,6 +270,20 @@ class _AdminOrderDetailBodyState extends ConsumerState<_AdminOrderDetailBody> {
           spacing: 8,
           runSpacing: 8,
           children: [
+            _ActionButton(
+              label: 'Print shipping label',
+              enabled: true,
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => PdfViewerPage(
+                    title: 'Shipping label',
+                    fileName: '${order.trackingNumber}-label.pdf',
+                    loadBytes: () =>
+                        ref.read(orderRepositoryProvider).getLabelPdf(order.id),
+                  ),
+                ),
+              ),
+            ),
             if (order.pickupRiderClaimRequestedAt != null) ...[
               _ActionButton(
                 label: 'Approve pickup claim',
@@ -422,7 +449,7 @@ class _RiderPickerSheetState extends ConsumerState<_RiderPickerSheet> {
   Widget build(BuildContext context) {
     final riders = ref.watch(adminRidersProvider);
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.only(
           left: 20,
           right: 20,
@@ -433,7 +460,7 @@ class _RiderPickerSheetState extends ConsumerState<_RiderPickerSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Choose a rider', style: Theme.of(context).textTheme.titleMedium),
+            const SheetHeader(title: 'Choose a rider'),
             const SizedBox(height: 12),
             AppTextField(
               controller: _searchController,
@@ -552,7 +579,7 @@ class _UpdateStatusSheetState extends State<_UpdateStatusSheet> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.only(
           left: 20,
           right: 20,
@@ -563,7 +590,7 @@ class _UpdateStatusSheetState extends State<_UpdateStatusSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Update status', style: Theme.of(context).textTheme.titleMedium),
+            const SheetHeader(title: 'Update status'),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,

@@ -73,6 +73,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
               label: 'Phone number',
               hint: '98XXXXXXXX',
               keyboardType: TextInputType.phone,
+              autofocus: true,
               onChanged: (_) => setState(() {}),
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,

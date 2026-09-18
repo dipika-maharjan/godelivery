@@ -20,6 +20,7 @@ class AppTextField extends StatelessWidget {
     this.inputFormatters,
     this.maxLength,
     this.helperText,
+    this.autofocus = false,
   });
 
   final TextEditingController? controller;
@@ -36,6 +37,7 @@ class AppTextField extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
   final int? maxLength;
   final String? helperText;
+  final bool autofocus;
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +60,7 @@ class AppTextField extends StatelessWidget {
           onChanged: onChanged,
           readOnly: readOnly,
           onTap: onTap,
+          autofocus: autofocus,
           textCapitalization: textCapitalization,
           inputFormatters: inputFormatters,
           maxLength: maxLength,

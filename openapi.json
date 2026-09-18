@@ -5760,6 +5760,21 @@
             "type": "boolean",
             "default": false
           },
+          "isFragile": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether this package requires fragile handling — drives the FRAGILE icon on the shipping label"
+          },
+          "isFlammable": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether this package contains flammable contents — drives the FLAMMABLE icon on the shipping label"
+          },
+          "needsToBeDry": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether this package must be kept dry — drives the KEEP DRY icon on the shipping label"
+          },
           "imageAssetIds": {
             "description": "MediaAsset ids returned by POST /media/uploads, to attach as this package's photos",
             "type": "array",
@@ -5933,6 +5948,15 @@
           "isDangerous": {
             "type": "boolean"
           },
+          "isFragile": {
+            "type": "boolean"
+          },
+          "isFlammable": {
+            "type": "boolean"
+          },
+          "needsToBeDry": {
+            "type": "boolean"
+          },
           "images": {
             "type": "array",
             "items": {
@@ -5945,6 +5969,9 @@
           "name",
           "weightKg",
           "isDangerous",
+          "isFragile",
+          "isFlammable",
+          "needsToBeDry",
           "images"
         ]
       },
@@ -6411,6 +6438,18 @@
           },
           "isDangerous": {
             "type": "boolean"
+          },
+          "isFragile": {
+            "type": "boolean",
+            "description": "Whether this package requires fragile handling — drives the FRAGILE icon on the shipping label"
+          },
+          "isFlammable": {
+            "type": "boolean",
+            "description": "Whether this package contains flammable contents — drives the FLAMMABLE icon on the shipping label"
+          },
+          "needsToBeDry": {
+            "type": "boolean",
+            "description": "Whether this package must be kept dry — drives the KEEP DRY icon on the shipping label"
           }
         }
       },
@@ -7052,6 +7091,21 @@
           "isDangerous": {
             "type": "boolean",
             "default": false
+          },
+          "isFragile": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether this package requires fragile handling — drives the FRAGILE icon on the shipping label"
+          },
+          "isFlammable": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether this package contains flammable contents — drives the FLAMMABLE icon on the shipping label"
+          },
+          "needsToBeDry": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether this package must be kept dry — drives the KEEP DRY icon on the shipping label"
           },
           "imageAssetIds": {
             "type": "array",

@@ -68,51 +68,42 @@ class OtpBoxInputState extends State<OtpBoxInput> {
 
   @override
   Widget build(BuildContext context) {
-    return AutofillGroup(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: List.generate(widget.length, (index) {
-          return SizedBox(
-            width: 46,
-            height: 54,
-            child: TextField(
-              controller: _controllers[index],
-              focusNode: _focusNodes[index],
-              autofocus: index == 0,
-              textAlign: TextAlign.center,
-              keyboardType: TextInputType.number,
-              maxLength: widget.length,
-              // Lets iOS surface its native "from SMS" code suggestion; a
-              // full code typed/tapped in lands here and _handleChange
-              // distributes it across the boxes. Android autofill is
-              // handled separately via otp_autofill's SMS User Consent API.
-              autofillHints: index == 0
-                  ? const [AutofillHints.oneTimeCode]
-                  : null,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(
-                counterText: '',
-                contentPadding: EdgeInsets.zero,
-                filled: true,
-                fillColor: context.colors.cardAlt,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppColors.primary,
-                    width: 1.5,
-                  ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(widget.length, (index) {
+        return SizedBox(
+          width: 46,
+          height: 54,
+          child: TextField(
+            controller: _controllers[index],
+            focusNode: _focusNodes[index],
+            autofocus: index == 0,
+            textAlign: TextAlign.center,
+            keyboardType: TextInputType.number,
+            maxLength: widget.length,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: InputDecoration(
+              counterText: '',
+              contentPadding: EdgeInsets.zero,
+              filled: true,
+              fillColor: context.colors.cardAlt,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 1.5,
                 ),
               ),
-              onChanged: (value) => _handleChange(index, value),
             ),
-          );
-        }),
-      ),
+            onChanged: (value) => _handleChange(index, value),
+          ),
+        );
+      }),
     );
   }
 }

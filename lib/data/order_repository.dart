@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -24,18 +26,27 @@ class PackageDraft {
     required this.name,
     required this.weightKg,
     this.isDangerous = false,
+    this.isFragile = true,
+    this.isFlammable = true,
+    this.needsToBeDry = true,
     this.imageAssetIds = const [],
   });
 
   final String name;
   final double weightKg;
   final bool isDangerous;
+  final bool isFragile;
+  final bool isFlammable;
+  final bool needsToBeDry;
   final List<String> imageAssetIds;
 
   Map<String, dynamic> toJson() => {
     'name': name,
     'weightKg': weightKg,
     'isDangerous': isDangerous,
+    'isFragile': isFragile,
+    'isFlammable': isFlammable,
+    'needsToBeDry': needsToBeDry,
     if (imageAssetIds.isNotEmpty) 'imageAssetIds': imageAssetIds,
   };
 }
@@ -289,4 +300,23 @@ class OrderRepository {
       throw ApiException.fromDioException(e);
     }
   }
+
+  Future<Uint8List> _getPdfBytes(String path) async {
+    try {
+      final response = await _dio.get<List<int>>(
+        path,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return Uint8List.fromList(response.data!);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// A 6x4in shipping label PDF, with a Code128 barcode of the tracking
+  /// number for warehouse/admin scanners (admin).
+  Future<Uint8List> getLabelPdf(String id) => _getPdfBytes('/orders/$id/label/pdf');
+
+  /// The order invoice PDF, rendered on demand.
+  Future<Uint8List> getInvoicePdf(String id) => _getPdfBytes('/orders/$id/invoice/pdf');
 }

@@ -10,6 +10,7 @@ import '../../../providers/admin_riders_provider.dart';
 import '../../../providers/payouts_provider.dart';
 import '../../../widgets/app_text_field.dart';
 import '../../../widgets/primary_button.dart';
+import '../../../widgets/sheet_header.dart';
 
 /// Pick a rider, choose which of their unpaid deliveries to cover, and
 /// create a payout batch (`POST /payouts`).
@@ -201,13 +202,13 @@ class _RiderPickerSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final riders = ref.watch(adminRidersProvider);
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Choose a rider', style: Theme.of(context).textTheme.titleMedium),
+            const SheetHeader(title: 'Choose a rider'),
             const SizedBox(height: 12),
             ConstrainedBox(
               constraints: BoxConstraints(

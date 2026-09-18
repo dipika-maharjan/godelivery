@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../core/notifications/push_notifications_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../providers/notifications_provider.dart';
 import 'more/admin_more_page.dart';
 import 'orders/admin_orders_page.dart';
 import 'payouts/admin_payouts_page.dart';
@@ -9,16 +14,24 @@ import 'riders/admin_riders_page.dart';
 
 enum AdminTab { orders, riders, payouts, more }
 
-class AdminShell extends StatefulWidget {
+class AdminShell extends ConsumerStatefulWidget {
   const AdminShell({super.key});
 
   @override
-  State<AdminShell> createState() => _AdminShellState();
+  ConsumerState<AdminShell> createState() => _AdminShellState();
 }
 
-class _AdminShellState extends State<AdminShell> {
+class _AdminShellState extends ConsumerState<AdminShell> {
   AdminTab _tab = AdminTab.orders;
   late final PageController _pageController = PageController(initialPage: _tab.index);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(pushNotificationsServiceProvider).initialize();
+    });
+  }
 
   @override
   void dispose() {
@@ -27,6 +40,7 @@ class _AdminShellState extends State<AdminShell> {
   }
 
   void _goToTab(AdminTab tab) {
+    if (tab != _tab) HapticFeedback.selectionClick();
     setState(() => _tab = tab);
     _pageController.animateToPage(
       tab.index,
@@ -51,12 +65,78 @@ class _AdminShellState extends State<AdminShell> {
             ],
           ),
           Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            right: 20,
+            child: const _NotificationBellButton(),
+          ),
+          Positioned(
             left: 0,
             right: 0,
             bottom: 24,
             child: Center(child: _NavPill(current: _tab, onChanged: _goToTab)),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _NotificationBellButton extends ConsumerWidget {
+  const _NotificationBellButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unreadCount = ref.watch(unreadCountProvider).valueOrNull ?? 0;
+
+    return InkWell(
+      onTap: () => context.push('/admin/notifications'),
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: context.colors.card,
+          shape: BoxShape.circle,
+          border: Border.all(color: context.colors.border),
+          boxShadow: [
+            BoxShadow(
+              color: context.colors.shadowSoft,
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Center(
+              child: Icon(LucideIcons.bell, size: 19, color: context.colors.text),
+            ),
+            if (unreadCount > 0)
+              Positioned(
+                top: 2,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  constraints: const BoxConstraints(minWidth: 15),
+                  decoration: BoxDecoration(
+                    color: AppColors.danger,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                  child: Text(
+                    unreadCount > 9 ? '9+' : '$unreadCount',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

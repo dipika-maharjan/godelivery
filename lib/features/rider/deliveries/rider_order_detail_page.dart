@@ -17,6 +17,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/orders_provider.dart';
 import '../../../providers/rider_jobs_provider.dart';
 import '../../../widgets/order_status_chip.dart';
+import '../../../widgets/package_flags_row.dart';
 
 const _terminalStatuses = {
   OrderStatus.delivered,
@@ -328,14 +329,24 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
         ...order.packages.map(
           (p) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(LucideIcons.package, size: 16, color: context.colors.textMuted),
-                const SizedBox(width: 8),
-                Expanded(child: Text(p.name)),
-                Text(
-                  '${p.weightKg} kg',
-                  style: TextStyle(color: context.colors.textMuted, fontSize: 12.5),
+                Row(
+                  children: [
+                    Icon(LucideIcons.package, size: 16, color: context.colors.textMuted),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(p.name)),
+                    Text(
+                      '${p.weightKg} kg',
+                      style: TextStyle(color: context.colors.textMuted, fontSize: 12.5),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 24),
+                  child: PackageFlagsRow(package: p),
                 ),
               ],
             ),

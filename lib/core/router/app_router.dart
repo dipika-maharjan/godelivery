@@ -115,6 +115,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) =>
             RiderOrderDetailPage(orderId: state.pathParameters['id']!),
       ),
+      GoRoute(
+        path: '/rider/notifications',
+        builder: (context, state) => const NotificationsPage(),
+      ),
+      GoRoute(
+        path: '/admin/notifications',
+        builder: (context, state) => const NotificationsPage(),
+      ),
     ],
   );
 });

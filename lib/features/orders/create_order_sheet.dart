@@ -26,6 +26,7 @@ import '../../providers/saved_locations_provider.dart';
 import '../../widgets/app_text_field.dart';
 import '../../widgets/location_picker.dart';
 import '../../widgets/primary_button.dart';
+import '../../widgets/sheet_header.dart';
 import '../home/saved_addresses_page.dart';
 
 class CreateOrderSheet extends ConsumerStatefulWidget {
@@ -52,6 +53,10 @@ class _PackageDraftControllers {
   final TextEditingController weightController;
   final List<_PackageImageDraft> images = [];
   bool isDangerous = false;
+  bool isFragile = true;
+  bool isFlammable = true;
+  bool needsToBeDry = true;
+  bool moreInfoExpanded = false;
 
   void dispose() {
     nameController.dispose();
@@ -65,7 +70,6 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
   final _phoneController = TextEditingController();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _codAmountController = TextEditingController();
   final _pickupContactNameController = TextEditingController();
   final _pickupContactPhoneController = TextEditingController();
   final List<_PackageDraftControllers> _packages = [_PackageDraftControllers()];
@@ -82,14 +86,12 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
   bool _estimating = false;
   bool _submitting = false;
   OrderPayer _payer = OrderPayer.sender;
-  PaymentMethod _paymentMethod = PaymentMethod.cod;
 
   @override
   void dispose() {
     _phoneController.dispose();
     _nameController.dispose();
     _emailController.dispose();
-    _codAmountController.dispose();
     _pickupContactNameController.dispose();
     _pickupContactPhoneController.dispose();
     for (final p in _packages) {
@@ -348,6 +350,9 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
                     name: p.nameController.text.trim(),
                     weightKg: double.parse(p.weightController.text.trim()),
                     isDangerous: p.isDangerous,
+                    isFragile: p.isFragile,
+                    isFlammable: p.isFlammable,
+                    needsToBeDry: p.needsToBeDry,
                     imageAssetIds: p.images
                         .map((image) => image.assetId)
                         .whereType<String>()
@@ -356,10 +361,7 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
                 )
                 .toList(),
             payer: _payer,
-            paymentMethod: _paymentMethod,
-            codAmount: _codAmountController.text.trim().isEmpty
-                ? null
-                : double.tryParse(_codAmountController.text.trim()),
+            paymentMethod: PaymentMethod.cod,
           );
       ref.invalidate(ordersProvider(OrderRoleFilter.sent));
       if (!mounted) return;
@@ -419,8 +421,8 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
                     controller: scrollController,
                     padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                     children: [
-                      Text(
-                        'New shipment',
+                      SheetHeader(
+                        title: 'New shipment',
                         style: Theme.of(context).textTheme.headlineMedium,
                       ),
                       const SizedBox(height: 20),
@@ -505,8 +507,24 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
                       AppTextField(
                         controller: _pickupContactPhoneController,
                         label: 'Pickup contact phone (optional)',
-                        hint: 'Defaults to your number',
+                        hint: '98XXXXXXXX',
                         keyboardType: TextInputType.phone,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(10),
+                        ],
+                        maxLength: 10,
+                        helperText: 'Defaults to your number if left blank',
+                        prefix: const Padding(
+                          padding: EdgeInsets.only(left: 12),
+                          child: Align(
+                            widthFactor: 1,
+                            child: Text(
+                              '+977',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 12),
                       _ScheduledPickupField(
@@ -599,23 +617,6 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
                       _PayerSelector(
                         payer: _payer,
                         onChanged: (payer) => setState(() => _payer = payer),
-                      ),
-                      const SizedBox(height: 12),
-                      _PaymentMethodSelector(
-                        method: _paymentMethod,
-                        onChanged: (method) =>
-                            setState(() => _paymentMethod = method),
-                      ),
-                      const SizedBox(height: 12),
-                      AppTextField(
-                        controller: _codAmountController,
-                        label: 'Cash to collect from receiver (optional)',
-                        hint: 'e.g. 2500',
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        helperText:
-                            'For the goods themselves — separate from the delivery charge',
                       ),
                       const SizedBox(height: 24),
                       PrimaryButton(
@@ -764,16 +765,13 @@ class _PickupLocationSheet extends ConsumerWidget {
     final shopLocation = ref.watch(authControllerProvider).user?.shopLocation;
     final savedLocations = ref.watch(savedLocationsProvider);
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Choose pickup location',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            const SheetHeader(title: 'Choose pickup location'),
             const SizedBox(height: 12),
             if (shopLocation != null)
               _PickupOptionTile(
@@ -1053,12 +1051,15 @@ class _PackageFormRow extends ConsumerWidget {
       draft
         ..assetId = ticket.assetId
         ..uploading = false;
-    } catch (_) {
+    } catch (e) {
       controllers.images.remove(draft);
       if (context.mounted) {
+        final message = e is ApiException
+            ? "Couldn't upload photo: ${e.message}"
+            : "Couldn't upload photo.";
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text("Couldn't upload photo.")));
+        ).showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
       onChanged();
@@ -1105,39 +1106,95 @@ class _PackageFormRow extends ConsumerWidget {
               ),
             ],
           ),
-          Row(
-            children: [
-              Expanded(
-                child: StatefulBuilder(
-                  builder: (context, setInner) {
-                    return CheckboxListTile(
-                      value: controllers.isDangerous,
-                      onChanged: (value) {
-                        setInner(() {});
-                        controllers.isDangerous = value ?? false;
-                        onChanged();
-                      },
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      dense: true,
-                      title: const Text(
-                        'Contains dangerous goods',
-                        style: TextStyle(fontSize: 12.5),
+          StatefulBuilder(
+            builder: (context, setInner) {
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => setInner(
+                            () => controllers.moreInfoExpanded =
+                                !controllers.moreInfoExpanded,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  controllers.moreInfoExpanded
+                                      ? LucideIcons.chevronDown
+                                      : LucideIcons.chevronRight,
+                                  size: 16,
+                                  color: context.colors.textMuted,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'More information',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.colors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                    );
-                  },
-                ),
-              ),
-              if (canRemove)
-                IconButton(
-                  onPressed: onRemove,
-                  icon: const Icon(
-                    LucideIcons.trash2,
-                    size: 18,
-                    color: AppColors.danger,
+                      if (canRemove)
+                        IconButton(
+                          onPressed: onRemove,
+                          icon: const Icon(
+                            LucideIcons.trash2,
+                            size: 18,
+                            color: AppColors.danger,
+                          ),
+                        ),
+                    ],
                   ),
-                ),
-            ],
+                  if (controllers.moreInfoExpanded)
+                    Column(
+                      children: [
+                        _FlagCheckbox(
+                          label: 'Fragile — handle with care',
+                          value: controllers.isFragile,
+                          onChanged: (value) {
+                            setInner(() => controllers.isFragile = value);
+                            onChanged();
+                          },
+                        ),
+                        _FlagCheckbox(
+                          label: 'Flammable',
+                          value: controllers.isFlammable,
+                          onChanged: (value) {
+                            setInner(() => controllers.isFlammable = value);
+                            onChanged();
+                          },
+                        ),
+                        _FlagCheckbox(
+                          label: 'Must be kept dry',
+                          value: controllers.needsToBeDry,
+                          onChanged: (value) {
+                            setInner(() => controllers.needsToBeDry = value);
+                            onChanged();
+                          },
+                        ),
+                        _FlagCheckbox(
+                          label: 'Contains dangerous goods',
+                          value: controllers.isDangerous,
+                          onChanged: (value) {
+                            setInner(() => controllers.isDangerous = value);
+                            onChanged();
+                          },
+                        ),
+                      ],
+                    ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 4),
           Align(
@@ -1150,6 +1207,30 @@ class _PackageFormRow extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _FlagCheckbox extends StatelessWidget {
+  const _FlagCheckbox({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return CheckboxListTile(
+      value: value,
+      onChanged: (checked) => onChanged(checked ?? false),
+      contentPadding: EdgeInsets.zero,
+      controlAffinity: ListTileControlAffinity.leading,
+      dense: true,
+      title: Text(label, style: const TextStyle(fontSize: 12.5)),
     );
   }
 }
@@ -1291,73 +1372,6 @@ class _PayerSelector extends StatelessWidget {
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _PaymentMethodSelector extends StatelessWidget {
-  const _PaymentMethodSelector({required this.method, required this.onChanged});
-
-  final PaymentMethod method;
-  final ValueChanged<PaymentMethod> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final option in PaymentMethod.values)
-          _PaymentMethodChip(
-            method: option,
-            selected: method == option,
-            onTap: () => onChanged(option),
-          ),
-      ],
-    );
-  }
-}
-
-class _PaymentMethodChip extends StatelessWidget {
-  const _PaymentMethodChip({
-    required this.method,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final PaymentMethod method;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final display = paymentMethodDisplayFor(method);
-    final color = selected ? AppColors.onPrimary : context.colors.text;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : context.colors.cardAlt,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(display.icon, size: 15, color: color),
-            const SizedBox(width: 6),
-            Text(
-              display.label,
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

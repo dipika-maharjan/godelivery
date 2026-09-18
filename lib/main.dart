@@ -9,6 +9,7 @@ import 'package:galli_maps_package/galli_maps_package.dart';
 import 'core/config/app_config.dart';
 import 'core/notifications/push_notifications_service.dart';
 import 'core/router/app_router.dart';
+import 'core/shortcuts/quick_actions_service.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/theme_provider.dart';
 
@@ -28,11 +29,26 @@ void main() async {
   runApp(const ProviderScope(child: GoDeliveryApp()));
 }
 
-class GoDeliveryApp extends ConsumerWidget {
+class GoDeliveryApp extends ConsumerStatefulWidget {
   const GoDeliveryApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GoDeliveryApp> createState() => _GoDeliveryAppState();
+}
+
+class _GoDeliveryAppState extends ConsumerState<GoDeliveryApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Registers the home-screen long-press shortcuts; safe to call
+    // regardless of auth state since it only wires up the OS-level menu.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(quickActionsServiceProvider).initialize();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
 

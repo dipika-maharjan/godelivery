@@ -126,6 +126,9 @@ class OrderPackage {
     required this.name,
     required this.weightKg,
     required this.isDangerous,
+    required this.isFragile,
+    required this.isFlammable,
+    required this.needsToBeDry,
     required this.images,
   });
 
@@ -135,6 +138,9 @@ class OrderPackage {
       name: json['name'] as String,
       weightKg: (json['weightKg'] as num).toDouble(),
       isDangerous: json['isDangerous'] as bool,
+      isFragile: json['isFragile'] as bool? ?? false,
+      isFlammable: json['isFlammable'] as bool? ?? false,
+      needsToBeDry: json['needsToBeDry'] as bool? ?? false,
       images: (json['images'] as List)
           .map((e) => MediaAsset.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -145,6 +151,9 @@ class OrderPackage {
   final String name;
   final double weightKg;
   final bool isDangerous;
+  final bool isFragile;
+  final bool isFlammable;
+  final bool needsToBeDry;
   final List<MediaAsset> images;
 }
 

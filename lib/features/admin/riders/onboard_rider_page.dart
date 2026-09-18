@@ -43,7 +43,7 @@ class _OnboardRiderPageState extends ConsumerState<OnboardRiderPage> {
     setState(() => _submitting = true);
     try {
       await ref.read(ridersRepositoryProvider).onboard(
-            phoneNumber: '+977${_phoneController.text.trim()}',
+            phoneNumber: _phoneController.text.trim(),
             name: _nameController.text.trim(),
             vehicleType: _vehicleType,
             vehiclePlateNumber: _plateController.text.trim().isEmpty

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -51,6 +52,10 @@ class _OtpVerifyPageState extends ConsumerState<OtpVerifyPage> {
   }
 
   void _listenForIncomingCode() {
+    // The SMS User Consent API this drives is Android-only; on iOS the
+    // package's own code still runs its listen call but against an empty
+    // futures list, whose `.first` throws an unhandled "no element" error.
+    if (defaultTargetPlatform != TargetPlatform.android) return;
     final codePattern = RegExp('\\d{$_otpLength}');
     _otpAutoFillController.startListenUserConsent(
       (code) => codePattern.firstMatch(code ?? '')?.group(0) ?? '',

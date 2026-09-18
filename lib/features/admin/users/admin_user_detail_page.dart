@@ -10,6 +10,7 @@ import '../../../models/admin_user.dart';
 import '../../../models/user.dart';
 import '../../../providers/admin_users_provider.dart';
 import '../../../widgets/app_text_field.dart';
+import '../../../widgets/sheet_header.dart';
 
 class AdminUserDetailPage extends ConsumerWidget {
   const AdminUserDetailPage({super.key, required this.userId});
@@ -175,7 +176,7 @@ class _EditUserSheetState extends State<_EditUserSheet> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.only(
           left: 20,
           right: 20,
@@ -186,7 +187,7 @@ class _EditUserSheetState extends State<_EditUserSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Edit profile', style: Theme.of(context).textTheme.titleMedium),
+            const SheetHeader(title: 'Edit profile'),
             const SizedBox(height: 12),
             AppTextField(controller: _nameController, label: 'Name'),
             const SizedBox(height: 12),

@@ -41,7 +41,7 @@ class _CreateAdminPageState extends ConsumerState<CreateAdminPage> {
     setState(() => _submitting = true);
     try {
       await ref.read(adminUsersRepositoryProvider).createAdmin(
-            phoneNumber: '+977${_phoneController.text.trim()}',
+            phoneNumber: _phoneController.text.trim(),
             name: _nameController.text.trim(),
             email: _emailController.text.trim().isEmpty
                 ? null
