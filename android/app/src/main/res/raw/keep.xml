@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  These drawables are only referenced by name from Dart (quick_actions'
+  ShortcutItem.icon), never from Kotlin/XML — the resource shrinker can't see
+  that and would strip them from a minified release build otherwise.
+  https://developer.android.com/studio/build/shrink-code#keep-resources
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_quick_track,@drawable/ic_quick_shipments,@drawable/ic_quick_new_shipment" />

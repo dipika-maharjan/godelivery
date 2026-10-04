@@ -1,40 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:godelivery/app/app.dart';
-import 'package:godelivery/features/otp/presentation/otp_screen.dart';
-import 'package:godelivery/features/signin/presentation/signin_screen.dart';
+import 'package:godelivery/core/theme/app_theme.dart';
+import 'package:godelivery/features/welcome/welcome_page.dart';
+import 'package:godelivery/providers/auth_provider.dart';
+
+class _UnauthenticatedAuthController extends AuthController {
+  @override
+  AuthState build() => const AuthState.unauthenticated();
+}
 
 void main() {
-  testWidgets('GoDelivery splash screen loads', (WidgetTester tester) async {
-    await tester.pumpWidget(const GoDeliveryApp());
-    await tester.pumpAndSettle();
-
-    expect(find.byType(Image), findsAtLeastNWidgets(1));
-  });
-
-  testWidgets('Send OTP opens the OTP screen for a valid number', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('Welcome page shows the sign-in entry point', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: const SigninScreen(),
-        onGenerateRoute: (settings) {
-          if (settings.name == '/verify-otp') {
-            final phoneNumber = settings.arguments as String? ?? '';
-            return MaterialPageRoute(
-              builder: (_) => OtpScreen(phoneNumber: phoneNumber),
-            );
-          }
-          return null;
-        },
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith(
+            _UnauthenticatedAuthController.new,
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: const WelcomePage(),
+        ),
       ),
     );
 
-    await tester.enterText(find.byType(TextField), '9876543210');
-    await tester.tap(find.text('SEND OTP'));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
-
-    expect(find.text('Verify OTP'), findsOneWidget);
+    expect(find.text('Sign In'), findsOneWidget);
   });
 }

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Local-dev only: lets the debug app talk to a backend running on your LAN
+  (e.g. behind a Caddy reverse proxy on your dev machine) without a
+  publicly-trusted certificate.
+
+  - cleartext-permitted domain-configs: allow plain http:// to your dev
+    machine's IP, since Android blocks cleartext traffic by default.
+  - <certificates src="user"/>: lets the app trust a CA you've manually
+    installed on the device (Settings > Security > Install a certificate),
+    for when you're proxying over https:// with a self-signed cert instead.
+
+  Update the IP below to match AppConfig.baseUrl, and remove this file
+  (and the networkSecurityConfig reference in AndroidManifest.xml) once
+  you're pointed at a real backend with a trusted certificate.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">192.168.101.14</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>
