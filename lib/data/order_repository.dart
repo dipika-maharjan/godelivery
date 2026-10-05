@@ -274,6 +274,18 @@ class OrderRepository {
   Future<Order> verifyDeliveryAdmin(String id) =>
       _post('/orders/$id/verify-delivery/admin');
 
+  Future<Order> verifyDeliveryReceiver(String id, String signature) async {
+    try {
+      final response = await _dio.post(
+        '/orders/$id/verify-delivery',
+        data: {'signature': signature},
+      );
+      return Order.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   Future<Order> updateStatus(
     String id, {
     required OrderStatus status,
