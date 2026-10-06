@@ -16,6 +16,7 @@ import '../../providers/orders_provider.dart';
 import '../../widgets/order_status_chip.dart';
 import '../../widgets/location_picker.dart';
 import '../../widgets/package_flags_row.dart';
+import '../../widgets/package_images_row.dart';
 import '../../widgets/pdf_viewer_page.dart';
 
 const _trackingWebBaseUrl = 'https://godelivery.godokan.com/track';
@@ -331,6 +332,13 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
                   padding: const EdgeInsets.only(left: 24),
                   child: PackageFlagsRow(package: p),
                 ),
+                if (p.images.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 24),
+                    child: PackageImagesRow(images: p.images),
+                  ),
+                ],
               ],
             ),
           ),

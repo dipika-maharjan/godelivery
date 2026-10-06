@@ -16,6 +16,7 @@ import '../../../providers/orders_provider.dart';
 import '../../../widgets/app_text_field.dart';
 import '../../../widgets/order_status_chip.dart';
 import '../../../widgets/package_flags_row.dart';
+import '../../../widgets/package_images_row.dart';
 import '../../../widgets/pdf_viewer_page.dart';
 import '../../../widgets/sheet_header.dart';
 
@@ -153,7 +154,10 @@ class _AdminOrderDetailBodyState extends ConsumerState<_AdminOrderDetailBody> {
       ),
     );
     if (confirmed == true) {
-      await _run((repo) => repo.adminCancel(widget.order.id), 'Order cancelled.');
+      await _run(
+        (repo) => repo.adminCancel(widget.order.id),
+        'Order cancelled.',
+      );
     }
   }
 
@@ -245,12 +249,19 @@ class _AdminOrderDetailBodyState extends ConsumerState<_AdminOrderDetailBody> {
               children: [
                 Row(
                   children: [
-                    Icon(LucideIcons.package, size: 16, color: context.colors.textMuted),
+                    Icon(
+                      LucideIcons.package,
+                      size: 16,
+                      color: context.colors.textMuted,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(child: Text(p.name)),
                     Text(
                       '${p.weightKg} kg',
-                      style: TextStyle(color: context.colors.textMuted, fontSize: 12.5),
+                      style: TextStyle(
+                        color: context.colors.textMuted,
+                        fontSize: 12.5,
+                      ),
                     ),
                   ],
                 ),
@@ -259,6 +270,13 @@ class _AdminOrderDetailBodyState extends ConsumerState<_AdminOrderDetailBody> {
                   padding: const EdgeInsets.only(left: 24),
                   child: PackageFlagsRow(package: p),
                 ),
+                if (p.images.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 24),
+                    child: PackageImagesRow(images: p.images),
+                  ),
+                ],
               ],
             ),
           ),
@@ -465,7 +483,8 @@ class _RiderPickerSheetState extends ConsumerState<_RiderPickerSheet> {
             AppTextField(
               controller: _searchController,
               hint: 'Search by name or phone',
-              onChanged: (value) => setState(() => _query = value.trim().toLowerCase()),
+              onChanged: (value) =>
+                  setState(() => _query = value.trim().toLowerCase()),
             ),
             const SizedBox(height: 12),
             ConstrainedBox(
@@ -486,12 +505,12 @@ class _RiderPickerSheetState extends ConsumerState<_RiderPickerSheet> {
                   final filtered = _query.isEmpty
                       ? activeRiders
                       : activeRiders
-                          .where(
-                            (r) =>
-                                r.name.toLowerCase().contains(_query) ||
-                                r.phoneNumber.contains(_query),
-                          )
-                          .toList();
+                            .where(
+                              (r) =>
+                                  r.name.toLowerCase().contains(_query) ||
+                                  r.phoneNumber.contains(_query),
+                            )
+                            .toList();
                   if (filtered.isEmpty) {
                     return const Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
@@ -623,14 +642,15 @@ class _UpdateStatusSheetState extends State<_UpdateStatusSheet> {
                 onPressed: _titleController.text.trim().isEmpty
                     ? null
                     : () => Navigator.of(context).pop(
-                          _StatusUpdate(
-                            status: _status,
-                            title: _titleController.text.trim(),
-                            description: _descriptionController.text.trim().isEmpty
-                                ? null
-                                : _descriptionController.text.trim(),
-                          ),
+                        _StatusUpdate(
+                          status: _status,
+                          title: _titleController.text.trim(),
+                          description:
+                              _descriptionController.text.trim().isEmpty
+                              ? null
+                              : _descriptionController.text.trim(),
                         ),
+                      ),
                 child: const Text('Update'),
               ),
             ),
@@ -672,7 +692,11 @@ class _StatusOption extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               display.label,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
             ),
           ],
         ),
@@ -752,7 +776,11 @@ class _PaymentPill extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             label,
-            style: TextStyle(color: color, fontSize: 11.5, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              color: color,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -761,7 +789,11 @@ class _PaymentPill extends StatelessWidget {
 }
 
 class _AddressCard extends StatelessWidget {
-  const _AddressCard({required this.icon, required this.label, required this.address});
+  const _AddressCard({
+    required this.icon,
+    required this.label,
+    required this.address,
+  });
 
   final IconData icon;
   final String label;
@@ -786,7 +818,10 @@ class _AddressCard extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(fontSize: 11.5, color: context.colors.textMuted),
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: context.colors.textMuted,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(address, style: const TextStyle(fontSize: 13.5)),
@@ -800,7 +835,11 @@ class _AddressCard extends StatelessWidget {
 }
 
 class _TimelineTile extends StatelessWidget {
-  const _TimelineTile({required this.event, required this.isLast, required this.isCurrent});
+  const _TimelineTile({
+    required this.event,
+    required this.isLast,
+    required this.isCurrent,
+  });
 
   final OrderTrackingEvent event;
   final bool isLast;
@@ -831,7 +870,9 @@ class _TimelineTile extends StatelessWidget {
                 ),
               ),
               if (!isLast)
-                Expanded(child: Container(width: 2, color: context.colors.border)),
+                Expanded(
+                  child: Container(width: 2, color: context.colors.border),
+                ),
             ],
           ),
           const SizedBox(width: 12),
@@ -843,19 +884,28 @@ class _TimelineTile extends StatelessWidget {
                 children: [
                   Text(
                     event.title,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
                   ),
                   if (event.description != null) ...[
                     const SizedBox(height: 2),
                     Text(
                       event.description!,
-                      style: TextStyle(fontSize: 12.5, color: context.colors.textMuted),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: context.colors.textMuted,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 3),
                   Text(
                     DateFormat('MMM d, h:mm a').format(event.createdAt),
-                    style: TextStyle(fontSize: 11.5, color: context.colors.textMuted),
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: context.colors.textMuted,
+                    ),
                   ),
                 ],
               ),

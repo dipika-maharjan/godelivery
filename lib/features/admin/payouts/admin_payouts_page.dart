@@ -18,112 +18,120 @@ class AdminPayoutsPage extends ConsumerWidget {
     final payouts = ref.watch(payoutsProvider);
     final statusFilter = ref.watch(payoutsStatusFilterProvider);
 
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Payouts',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'New payout',
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const CreatePayoutPage()),
-                  ),
-                  icon: const Icon(LucideIcons.plus),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: 36,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              children: [
-                _FilterChip(
-                  label: 'All',
-                  selected: statusFilter == null,
-                  onTap: () => ref.read(payoutsStatusFilterProvider.notifier).state = null,
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: 'Pending',
-                  selected: statusFilter == PayoutStatus.pending,
-                  onTap: () => ref.read(payoutsStatusFilterProvider.notifier).state =
-                      PayoutStatus.pending,
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: 'Paid',
-                  selected: statusFilter == PayoutStatus.paid,
-                  onTap: () => ref.read(payoutsStatusFilterProvider.notifier).state =
-                      PayoutStatus.paid,
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: 'Failed',
-                  selected: statusFilter == PayoutStatus.failed,
-                  onTap: () => ref.read(payoutsStatusFilterProvider.notifier).state =
-                      PayoutStatus.failed,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () => ref.read(payoutsProvider.notifier).refresh(),
-              child: payouts.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, _) => Center(
-                  child: Text(
-                    error is ApiException ? error.message : 'Something went wrong.',
-                  ),
-                ),
-                data: (list) {
-                  if (list.isEmpty) {
-                    return ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      children: [
-                        const SizedBox(height: 100),
-                        Icon(
-                          LucideIcons.banknote,
-                          size: 44,
-                          color: context.colors.textMuted,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No payouts match this filter.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: context.colors.textMuted),
-                        ),
-                      ],
-                    );
-                  }
-                  return ListView.separated(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
-                    itemCount: list.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final payout = list[index];
-                      return _PayoutTile(payout: payout);
-                    },
-                  );
-                },
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80),
+        child: FloatingActionButton(
+          tooltip: 'New payout',
+          onPressed: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const CreatePayoutPage())),
+          child: const Icon(LucideIcons.plus),
+        ),
+      ),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Text(
+                'Payouts',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
               ),
             ),
-          ),
-        ],
+            SizedBox(
+              height: 36,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: [
+                  _FilterChip(
+                    label: 'All',
+                    selected: statusFilter == null,
+                    onTap: () =>
+                        ref.read(payoutsStatusFilterProvider.notifier).state =
+                            null,
+                  ),
+                  const SizedBox(width: 8),
+                  _FilterChip(
+                    label: 'Pending',
+                    selected: statusFilter == PayoutStatus.pending,
+                    onTap: () =>
+                        ref.read(payoutsStatusFilterProvider.notifier).state =
+                            PayoutStatus.pending,
+                  ),
+                  const SizedBox(width: 8),
+                  _FilterChip(
+                    label: 'Paid',
+                    selected: statusFilter == PayoutStatus.paid,
+                    onTap: () =>
+                        ref.read(payoutsStatusFilterProvider.notifier).state =
+                            PayoutStatus.paid,
+                  ),
+                  const SizedBox(width: 8),
+                  _FilterChip(
+                    label: 'Failed',
+                    selected: statusFilter == PayoutStatus.failed,
+                    onTap: () =>
+                        ref.read(payoutsStatusFilterProvider.notifier).state =
+                            PayoutStatus.failed,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () => ref.read(payoutsProvider.notifier).refresh(),
+                child: payouts.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, _) => Center(
+                    child: Text(
+                      error is ApiException
+                          ? error.message
+                          : 'Something went wrong.',
+                    ),
+                  ),
+                  data: (list) {
+                    if (list.isEmpty) {
+                      return ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        children: [
+                          const SizedBox(height: 100),
+                          Icon(
+                            LucideIcons.banknote,
+                            size: 44,
+                            color: context.colors.textMuted,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No payouts match this filter.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: context.colors.textMuted),
+                          ),
+                        ],
+                      );
+                    }
+                    return ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
+                      itemCount: list.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final payout = list[index];
+                        return _PayoutTile(payout: payout);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -143,7 +151,9 @@ class _PayoutTile extends StatelessWidget {
     };
     return InkWell(
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => AdminPayoutDetailPage(payoutId: payout.id)),
+        MaterialPageRoute(
+          builder: (_) => AdminPayoutDetailPage(payoutId: payout.id),
+        ),
       ),
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -161,12 +171,18 @@ class _PayoutTile extends StatelessWidget {
                 children: [
                   Text(
                     payout.rider.name,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14.5,
+                    ),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     '${payout.orders.length} order(s) · ${DateFormat('MMM d').format(payout.createdAt)}',
-                    style: TextStyle(color: context.colors.textMuted, fontSize: 12.5),
+                    style: TextStyle(
+                      color: context.colors.textMuted,
+                      fontSize: 12.5,
+                    ),
                   ),
                 ],
               ),
@@ -180,7 +196,10 @@ class _PayoutTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(20),
@@ -204,7 +223,11 @@ class _PayoutTile extends StatelessWidget {
 }
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.selected, required this.onTap});
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -225,7 +248,11 @@ class _FilterChip extends StatelessWidget {
         alignment: Alignment.center,
         child: Text(
           label,
-          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: color),
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
         ),
       ),
     );

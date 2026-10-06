@@ -17,103 +17,114 @@ class AdminRidersPage extends ConsumerWidget {
     final riders = ref.watch(adminRidersProvider);
     final filter = ref.watch(adminRidersFilterProvider);
 
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Riders',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Onboard rider',
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const OnboardRiderPage()),
-                  ),
-                  icon: const Icon(LucideIcons.userPlus),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: 36,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              children: [
-                _FilterChip(
-                  label: 'All',
-                  selected: filter.isActive == null && filter.isAvailable == null,
-                  onTap: () => ref
-                      .read(adminRidersFilterProvider.notifier)
-                      .state = const AdminRidersFilter(),
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: 'Active',
-                  selected: filter.isActive == true,
-                  onTap: () => ref.read(adminRidersFilterProvider.notifier).state =
-                      const AdminRidersFilter(isActive: true),
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: 'Available now',
-                  selected: filter.isAvailable == true,
-                  onTap: () => ref.read(adminRidersFilterProvider.notifier).state =
-                      const AdminRidersFilter(isAvailable: true),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () => ref.read(adminRidersProvider.notifier).refresh(),
-              child: riders.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, _) => Center(
-                  child: Text(
-                    error is ApiException ? error.message : 'Something went wrong.',
-                  ),
-                ),
-                data: (list) {
-                  if (list.isEmpty) {
-                    return ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      children: [
-                        const SizedBox(height: 100),
-                        Icon(LucideIcons.bike, size: 44, color: context.colors.textMuted),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No riders match this filter.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: context.colors.textMuted),
-                        ),
-                      ],
-                    );
-                  }
-                  return ListView.separated(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
-                    itemCount: list.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final rider = list[index];
-                      return _RiderTile(rider: rider);
-                    },
-                  );
-                },
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80),
+        child: FloatingActionButton(
+          tooltip: 'Onboard rider',
+          onPressed: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const OnboardRiderPage())),
+          child: const Icon(LucideIcons.userPlus),
+        ),
+      ),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Text(
+                'Riders',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
               ),
             ),
-          ),
-        ],
+            SizedBox(
+              height: 36,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: [
+                  _FilterChip(
+                    label: 'All',
+                    selected:
+                        filter.isActive == null && filter.isAvailable == null,
+                    onTap: () =>
+                        ref.read(adminRidersFilterProvider.notifier).state =
+                            const AdminRidersFilter(),
+                  ),
+                  const SizedBox(width: 8),
+                  _FilterChip(
+                    label: 'Active',
+                    selected: filter.isActive == true,
+                    onTap: () =>
+                        ref.read(adminRidersFilterProvider.notifier).state =
+                            const AdminRidersFilter(isActive: true),
+                  ),
+                  const SizedBox(width: 8),
+                  _FilterChip(
+                    label: 'Available now',
+                    selected: filter.isAvailable == true,
+                    onTap: () =>
+                        ref.read(adminRidersFilterProvider.notifier).state =
+                            const AdminRidersFilter(isAvailable: true),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () =>
+                    ref.read(adminRidersProvider.notifier).refresh(),
+                child: riders.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, _) => Center(
+                    child: Text(
+                      error is ApiException
+                          ? error.message
+                          : 'Something went wrong.',
+                    ),
+                  ),
+                  data: (list) {
+                    if (list.isEmpty) {
+                      return ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        children: [
+                          const SizedBox(height: 100),
+                          Icon(
+                            LucideIcons.bike,
+                            size: 44,
+                            color: context.colors.textMuted,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No riders match this filter.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: context.colors.textMuted),
+                          ),
+                        ],
+                      );
+                    }
+                    return ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
+                      itemCount: list.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final rider = list[index];
+                        return _RiderTile(rider: rider);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -128,7 +139,9 @@ class _RiderTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => AdminRiderDetailPage(riderId: rider.id)),
+        MaterialPageRoute(
+          builder: (_) => AdminRiderDetailPage(riderId: rider.id),
+        ),
       ),
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -146,7 +159,11 @@ class _RiderTile extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: 0.16),
                 shape: BoxShape.circle,
               ),
-              child: Icon(LucideIcons.bike, size: 20, color: context.colors.text),
+              child: Icon(
+                LucideIcons.bike,
+                size: 20,
+                color: context.colors.text,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -155,12 +172,18 @@ class _RiderTile extends StatelessWidget {
                 children: [
                   Text(
                     rider.name,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14.5,
+                    ),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     '${vehicleTypeLabel(rider.vehicleType)} · ${rider.phoneNumber}',
-                    style: TextStyle(color: context.colors.textMuted, fontSize: 12.5),
+                    style: TextStyle(
+                      color: context.colors.textMuted,
+                      fontSize: 12.5,
+                    ),
                   ),
                 ],
               ),
@@ -197,7 +220,11 @@ class _Dot extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: color),
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
         ),
       ],
     );
@@ -205,7 +232,11 @@ class _Dot extends StatelessWidget {
 }
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.selected, required this.onTap});
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -226,7 +257,11 @@ class _FilterChip extends StatelessWidget {
         alignment: Alignment.center,
         child: Text(
           label,
-          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: color),
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
         ),
       ),
     );

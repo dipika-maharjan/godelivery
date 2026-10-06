@@ -24,6 +24,15 @@ final mediaRepositoryProvider = Provider<MediaRepository>((ref) {
   return MediaRepository(ref.watch(dioProvider));
 });
 
+/// Presigned view URL for a media asset, cached per [assetId] so repeat
+/// widget rebuilds don't re-request it (it's valid for a short TTL only).
+final mediaDownloadUrlProvider = FutureProvider.family<String, String>((
+  ref,
+  assetId,
+) {
+  return ref.watch(mediaRepositoryProvider).getDownloadUrl(assetId);
+});
+
 class MediaRepository {
   MediaRepository(this._dio);
 
@@ -45,7 +54,18 @@ class MediaRepository {
           'sizeBytes': sizeBytes,
         },
       );
+      // log
+
       return UploadTicket.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  Future<String> getDownloadUrl(String assetId) async {
+    try {
+      final response = await _dio.get('/media/$assetId/download-url');
+      return (response.data as Map<String, dynamic>)['url'] as String;
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
