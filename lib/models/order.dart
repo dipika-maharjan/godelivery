@@ -269,6 +269,8 @@ class Order {
     this.paidAt,
     this.codAmount,
     this.codCollectedAt,
+    this.receiverVerifiedAt,
+    this.adminVerifiedAt,
     required this.status,
     required this.packages,
     required this.trackingEvents,
@@ -340,6 +342,12 @@ class Order {
       codCollectedAt: json['codCollectedAt'] == null
           ? null
           : DateTime.parse(json['codCollectedAt'] as String),
+        receiverVerifiedAt: json['receiverVerifiedAt'] == null
+          ? null
+          : DateTime.parse(json['receiverVerifiedAt'] as String),
+        adminVerifiedAt: json['adminVerifiedAt'] == null
+          ? null
+          : DateTime.parse(json['adminVerifiedAt'] as String),
       status: orderStatusFromJson(json['status'] as String),
       packages: (json['packages'] as List)
           .map((e) => OrderPackage.fromJson(e as Map<String, dynamic>))
@@ -387,6 +395,8 @@ class Order {
   final DateTime? paidAt;
   final String? codAmount;
   final DateTime? codCollectedAt;
+  final DateTime? receiverVerifiedAt;
+  final DateTime? adminVerifiedAt;
   final OrderStatus status;
   final List<OrderPackage> packages;
   final List<OrderTrackingEvent> trackingEvents;

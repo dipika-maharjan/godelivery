@@ -23,6 +23,6 @@ class OrdersNotifier extends FamilyAsyncNotifier<List<Order>, OrderRoleFilter> {
   }
 }
 
-final orderDetailProvider = FutureProvider.family<Order, String>((ref, id) {
+final orderDetailProvider = FutureProvider.autoDispose.family<Order, String>((ref, id) {
   return ref.read(orderRepositoryProvider).getOne(id);
 });

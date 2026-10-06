@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
@@ -36,7 +39,16 @@ class RiderOrderDetailPage extends ConsumerWidget {
     final order = ref.watch(orderDetailProvider(orderId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Delivery')),
+      appBar: AppBar(
+        title: const Text('Delivery'),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh order',
+            onPressed: () => ref.invalidate(orderDetailProvider(orderId)),
+            icon: const Icon(LucideIcons.refreshCw),
+          ),
+        ],
+      ),
       body: order.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
@@ -160,6 +172,18 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
     );
   }
 
+  Future<void> _captureReceiverSignature() async {
+    final signature = await showDialog<String>(
+      context: context,
+      builder: (_) => const _SignatureCaptureDialog(),
+    );
+    if (signature == null) return;
+    await _run(
+      (repo) => repo.verifyDeliveryReceiver(widget.order.id, signature),
+      'Receiver signature captured.',
+    );
+  }
+
   Future<void> _confirmGiveUp({required bool isPickupLeg}) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -219,6 +243,24 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
   }
 
   _NextAction? _nextAction(Order order, bool isPickupLeg, bool isDeliveryLeg) {
+    if (isDeliveryLeg &&
+        (order.status == OrderStatus.atWarehouse ||
+            order.status == OrderStatus.outForDelivery)) {
+      return switch (order.status) {
+        OrderStatus.atWarehouse => const _NextAction(
+          OrderStatus.outForDelivery,
+          'Out for delivery',
+          'Mark out for delivery',
+        ),
+        OrderStatus.outForDelivery => const _NextAction(
+          OrderStatus.deliveredPendingVerification,
+          'Delivered',
+          'Mark delivered',
+        ),
+        _ => null,
+      };
+    }
+
     if (isPickupLeg) {
       switch (order.status) {
         case OrderStatus.pending:
@@ -231,24 +273,6 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
             OrderStatus.atWarehouse,
             'Arrived at warehouse',
             'Mark arrived at warehouse',
-          );
-        default:
-          return null;
-      }
-    }
-    if (isDeliveryLeg) {
-      switch (order.status) {
-        case OrderStatus.atWarehouse:
-          return const _NextAction(
-            OrderStatus.outForDelivery,
-            'Out for delivery',
-            'Mark out for delivery',
-          );
-        case OrderStatus.outForDelivery:
-          return const _NextAction(
-            OrderStatus.deliveredPendingVerification,
-            'Delivered',
-            'Mark delivered',
           );
         default:
           return null;
@@ -402,6 +426,16 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
                 destructive: true,
                 onPressed: _confirmFailedDelivery,
               ),
+            if (isDeliveryLeg &&
+                order.status == OrderStatus.deliveredPendingVerification)
+              if (order.receiverVerifiedAt == null)
+                _ActionButton(
+                  label: 'Capture receiver signature',
+                  enabled: !_acting,
+                  onPressed: _captureReceiverSignature,
+                )
+              else
+                const Chip(label: Text('Receiver signature captured')),
             if (canGiveUpPickup)
               _ActionButton(
                 label: 'Give up this order',
@@ -431,6 +465,137 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
       ],
     );
   }
+}
+
+class _SignatureCaptureDialog extends StatefulWidget {
+  const _SignatureCaptureDialog();
+
+  @override
+  State<_SignatureCaptureDialog> createState() => _SignatureCaptureDialogState();
+}
+
+class _SignatureCaptureDialogState extends State<_SignatureCaptureDialog> {
+  final _boundaryKey = GlobalKey();
+  final List<List<Offset>> _strokes = [];
+  String? _error;
+
+  Future<void> _save() async {
+    if (_strokes.isEmpty) {
+      setState(() => _error = 'Ask the receiver to sign before continuing.');
+      return;
+    }
+
+    try {
+      final boundary =
+          _boundaryKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 2);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+      if (byteData == null) throw StateError('Could not encode the signature.');
+
+      final signature =
+          'data:image/png;base64,${base64Encode(byteData.buffer.asUint8List())}';
+      if (signature.length > 1900000) {
+        throw StateError('Signature image is too large. Please sign again.');
+      }
+      if (mounted) Navigator.of(context).pop(signature);
+    } catch (error) {
+      if (mounted) setState(() => _error = error.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Receiver confirmation'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Ask the receiver to sign below to confirm receipt.'),
+          const SizedBox(height: 12),
+          RepaintBoundary(
+            key: _boundaryKey,
+            child: Container(
+              height: 170,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.black26),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onPanStart: (details) => setState(() {
+                  _error = null;
+                  _strokes.add([details.localPosition]);
+                }),
+                onPanUpdate: (details) => setState(
+                  () => _strokes.last.add(details.localPosition),
+                ),
+                child: CustomPaint(
+                  painter: _SignaturePainter(_strokes),
+                  child: const SizedBox.expand(),
+                ),
+              ),
+            ),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => setState(() {
+            _strokes.clear();
+            _error = null;
+          }),
+          child: const Text('Clear'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _save, child: const Text('Confirm receipt')),
+      ],
+    );
+  }
+}
+
+class _SignaturePainter extends CustomPainter {
+  const _SignaturePainter(this.strokes);
+
+  final List<List<Offset>> strokes;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+
+    for (final stroke in strokes) {
+      if (stroke.isEmpty) continue;
+      if (stroke.length == 1) {
+        canvas.drawPoints(ui.PointMode.points, stroke, paint);
+        continue;
+      }
+      final path = Path()..moveTo(stroke.first.dx, stroke.first.dy);
+      for (final point in stroke.skip(1)) {
+        path.lineTo(point.dx, point.dy);
+      }
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SignaturePainter oldDelegate) => true;
 }
 
 class _ActionButton extends StatelessWidget {
