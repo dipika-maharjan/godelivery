@@ -13,6 +13,7 @@ import '../../models/location.dart';
 import '../../models/order.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/orders_provider.dart';
+import '../../widgets/live_rider_map_card.dart';
 import '../../widgets/order_status_chip.dart';
 import '../../widgets/location_picker.dart';
 import '../../widgets/package_flags_row.dart';
@@ -344,6 +345,10 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
           ),
         ),
         const SizedBox(height: 24),
+        if (liveTrackableStatuses.contains(order.status)) ...[
+          LiveRiderMapCard.forOrder(order.id),
+          const SizedBox(height: 24),
+        ],
         Text('Timeline', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 12),
         ...events.asMap().entries.map(

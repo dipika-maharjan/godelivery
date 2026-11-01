@@ -8,6 +8,7 @@ import '../../core/utils/status_display.dart';
 import '../../models/order.dart';
 import '../../models/tracking.dart';
 import '../../providers/tracking_provider.dart';
+import '../../widgets/live_rider_map_card.dart';
 import '../../widgets/order_status_chip.dart';
 import '../../widgets/package_flags_row.dart';
 
@@ -211,6 +212,10 @@ class _TrackingBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 22),
+        if (tracking.status == OrderStatus.outForDelivery) ...[
+          LiveRiderMapCard.forTracking(tracking.trackingNumber),
+          const SizedBox(height: 24),
+        ],
         Text('Timeline', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 12),
         ...events.asMap().entries.map((entry) {

@@ -8,6 +8,7 @@ import '../core/network/dio_client.dart';
 import '../models/location.dart';
 import '../models/order.dart';
 import '../models/pagination.dart';
+import '../models/live_location.dart';
 import '../models/tracking.dart';
 
 enum OrderRoleFilter { sent, received, assigned, all }
@@ -112,6 +113,28 @@ class OrderRepository {
     try {
       final response = await _dio.get('/orders/$id');
       return Order.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Live position of the rider on this order's current leg (sender,
+  /// receiver or admin) — see [OrderLiveLocation].
+  Future<OrderLiveLocation> liveLocation(String id) async {
+    try {
+      final response = await _dio.get('/orders/$id/live-location');
+      return OrderLiveLocation.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Public, by tracking number — only while out for delivery, and without
+  /// the destination point.
+  Future<OrderLiveLocation> trackLiveLocation(String trackingNumber) async {
+    try {
+      final response = await _dio.get('/orders/track/$trackingNumber/live-location');
+      return OrderLiveLocation.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }

@@ -14,6 +14,7 @@ import '../../../providers/admin_orders_provider.dart';
 import '../../../providers/admin_riders_provider.dart';
 import '../../../providers/orders_provider.dart';
 import '../../../widgets/app_text_field.dart';
+import '../../../widgets/live_rider_map_card.dart';
 import '../../../widgets/order_status_chip.dart';
 import '../../../widgets/package_flags_row.dart';
 import '../../../widgets/package_images_row.dart';
@@ -406,6 +407,17 @@ class _AdminOrderDetailBodyState extends ConsumerState<_AdminOrderDetailBody> {
           ],
         ),
         const SizedBox(height: 24),
+        if (liveTrackableStatuses.contains(order.status) &&
+            (order.pickupRider != null || order.deliveryRider != null)) ...[
+          LiveRiderMapCard.forOrder(
+            order.id,
+            placeholder: Text(
+              'Live map appears here once the assigned rider turns on location sharing for this order.',
+              style: TextStyle(fontSize: 12.5, color: context.colors.textMuted),
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
         Text('Timeline', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 12),
         ...events.asMap().entries.map(

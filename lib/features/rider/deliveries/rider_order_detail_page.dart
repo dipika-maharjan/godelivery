@@ -14,13 +14,20 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/payment_display.dart';
 import '../../../core/utils/status_display.dart';
 import '../../../data/order_repository.dart';
-import '../../../data/riders_repository.dart';
 import '../../../models/order.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/live_location_sharing_provider.dart';
 import '../../../providers/orders_provider.dart';
 import '../../../providers/rider_jobs_provider.dart';
 import '../../../widgets/order_status_chip.dart';
 import '../../../widgets/package_flags_row.dart';
+
+const _pickupShareStatuses = {
+  OrderStatus.pending,
+  OrderStatus.confirmed,
+  OrderStatus.pickedUp,
+  OrderStatus.inTransit,
+};
 
 const _terminalStatuses = {
   OrderStatus.delivered,
@@ -79,14 +86,6 @@ class _RiderOrderDetailBody extends ConsumerStatefulWidget {
 
 class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
   bool _acting = false;
-  bool _sharingLocation = false;
-  Timer? _locationTimer;
-
-  @override
-  void dispose() {
-    _locationTimer?.cancel();
-    super.dispose();
-  }
 
   Future<void> _run(
     Future<Order> Function(OrderRepository repo) action,
@@ -203,8 +202,7 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
       ),
     );
     if (confirmed != true) return;
-    setState(() => _sharingLocation = false);
-    _locationTimer?.cancel();
+    ref.read(liveLocationSharingProvider.notifier).stop(widget.order.id);
     await _run(
       (repo) => isPickupLeg
           ? repo.unassignPickup(widget.order.id)
@@ -213,32 +211,15 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
     );
   }
 
-  void _toggleLocationSharing(bool value) {
-    setState(() => _sharingLocation = value);
-    _locationTimer?.cancel();
-    if (!value) return;
-    _postLocationPing();
-    _locationTimer = Timer.periodic(
-      const Duration(seconds: 30),
-      (_) => _postLocationPing(),
-    );
-  }
-
-  Future<void> _postLocationPing() async {
-    final position = await _tryGetPosition();
-    if (position == null || !mounted) return;
-    try {
-      await ref.read(ridersRepositoryProvider).submitLocation(
-            latitude: position.latitude,
-            longitude: position.longitude,
-            accuracyMeters: position.accuracy,
-            speedKmh: position.speed * 3.6,
-            heading: position.heading,
-            orderId: widget.order.id,
-          );
-    } catch (_) {
-      // A missed ping isn't worth interrupting the rider over — the next
-      // periodic tick will try again.
+  Future<void> _toggleLocationSharing(bool value) async {
+    final sharing = ref.read(liveLocationSharingProvider.notifier);
+    if (!value) {
+      sharing.stop(widget.order.id);
+      return;
+    }
+    final error = await sharing.start(widget.order.id);
+    if (error != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
     }
   }
 
@@ -292,6 +273,23 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
     final canGiveUpPickup =
         isPickupLeg && (order.status == OrderStatus.pending || order.status == OrderStatus.confirmed);
     final canGiveUpDelivery = isDeliveryLeg && order.status == OrderStatus.atWarehouse;
+    // Same leg/status pairs the API shows to customers on the live map, and
+    // only once an admin has approved this rider's claim.
+    final canShareLocation =
+        (isPickupLeg &&
+            order.pickupRiderClaimRequestedAt == null &&
+            _pickupShareStatuses.contains(order.status)) ||
+        (isDeliveryLeg &&
+            order.deliveryRiderClaimRequestedAt == null &&
+            order.status == OrderStatus.outForDelivery);
+    final isSharingLocation = ref.watch(liveLocationSharingProvider).contains(order.id);
+    if (isSharingLocation && !canShareLocation) {
+      // The leg just ended (dropped at warehouse, delivered, cancelled…) —
+      // stop broadcasting rather than leave the rider tracked for nothing.
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => ref.read(liveLocationSharingProvider.notifier).stop(order.id),
+      );
+    }
     final events = order.trackingEvents.reversed.toList();
 
     return ListView(
@@ -376,7 +374,7 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
             ),
           ),
         ),
-        if ((isPickupLeg || isDeliveryLeg) && !isTerminal) ...[
+        if (canShareLocation) ...[
           const SizedBox(height: 24),
           Text('Location sharing', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
@@ -388,12 +386,14 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
             ),
             child: SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              value: _sharingLocation,
+              value: isSharingLocation,
               onChanged: _toggleLocationSharing,
               title: const Text('Share my live location', style: TextStyle(fontSize: 13.5)),
-              subtitle: const Text(
-                'Posts your GPS position every 30s while this screen is open',
-                style: TextStyle(fontSize: 11.5),
+              subtitle: Text(
+                isSharingLocation
+                    ? 'The sender and receiver can see you on a live map. Keeps running if you leave this screen.'
+                    : 'Lets the sender and receiver follow you on a live map until this leg is done',
+                style: const TextStyle(fontSize: 11.5),
               ),
             ),
           ),
