@@ -32,6 +32,8 @@
 	<string>GoDelivery uses the camera to take photos of packages.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>GoDelivery uses your photo library to attach package photos to a shipment.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>GoDelivery uses your contacts to quickly fill in receiver details.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

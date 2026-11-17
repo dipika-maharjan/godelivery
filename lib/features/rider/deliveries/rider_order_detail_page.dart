@@ -8,12 +8,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/payment_display.dart';
 import '../../../core/utils/status_display.dart';
 import '../../../data/order_repository.dart';
+import '../../../models/location.dart';
 import '../../../models/order.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/live_location_sharing_provider.dart';
@@ -59,7 +60,9 @@ class RiderOrderDetailPage extends ConsumerWidget {
       body: order.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
-          child: Text(error is ApiException ? error.message : 'Something went wrong.'),
+          child: Text(
+            error is ApiException ? error.message : 'Something went wrong.',
+          ),
         ),
         data: (value) => _RiderOrderDetailBody(order: value),
       ),
@@ -81,11 +84,36 @@ class _RiderOrderDetailBody extends ConsumerStatefulWidget {
   final Order order;
 
   @override
-  ConsumerState<_RiderOrderDetailBody> createState() => _RiderOrderDetailBodyState();
+  ConsumerState<_RiderOrderDetailBody> createState() =>
+      _RiderOrderDetailBodyState();
 }
 
 class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
   bool _acting = false;
+
+  Future<void> _openNavigation(LocationResponse destination) async {
+    final uri = Uri.https(
+      'www.google.com',
+      '/maps/dir/',
+      {
+        'api': '1',
+        'destination': '${destination.latitude},${destination.longitude}',
+        'travelmode': 'driving',
+      },
+    );
+    final opened = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No map application is available.'),
+        ),
+      );
+    }
+  }
 
   Future<void> _run(
     Future<Order> Function(OrderRepository repo) action,
@@ -98,11 +126,15 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
       ref.invalidate(orderDetailProvider(widget.order.id));
       ref.invalidate(riderAssignedOrdersProvider);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMessage)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(successMessage)));
     } catch (e) {
       final message = e is ApiException ? e.message : 'Something went wrong.';
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _acting = false);
     }
@@ -144,7 +176,9 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Report failed delivery?'),
-        content: const Text('This records the delivery as failed for this order.'),
+        content: const Text(
+          'This records the delivery as failed for this order.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -152,7 +186,10 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Report failed', style: TextStyle(color: AppColors.danger)),
+            child: const Text(
+              'Report failed',
+              style: TextStyle(color: AppColors.danger),
+            ),
           ),
         ],
       ),
@@ -188,7 +225,9 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Give up this order?'),
-        content: const Text('It returns to the available pool for another rider to claim.'),
+        content: const Text(
+          'It returns to the available pool for another rider to claim.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -196,7 +235,10 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Give up', style: TextStyle(color: AppColors.danger)),
+            child: const Text(
+              'Give up',
+              style: TextStyle(color: AppColors.danger),
+            ),
           ),
         ],
       ),
@@ -219,7 +261,9 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
     }
     final error = await sharing.start(widget.order.id);
     if (error != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
     }
   }
 
@@ -246,9 +290,17 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
       switch (order.status) {
         case OrderStatus.pending:
         case OrderStatus.confirmed:
-          return const _NextAction(OrderStatus.pickedUp, 'Picked up', 'Mark picked up');
+          return const _NextAction(
+            OrderStatus.pickedUp,
+            'Picked up',
+            'Mark picked up',
+          );
         case OrderStatus.pickedUp:
-          return const _NextAction(OrderStatus.inTransit, 'In transit', 'Mark in transit');
+          return const _NextAction(
+            OrderStatus.inTransit,
+            'In transit',
+            'Mark in transit',
+          );
         case OrderStatus.inTransit:
           return const _NextAction(
             OrderStatus.atWarehouse,
@@ -271,8 +323,11 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
     final isTerminal = _terminalStatuses.contains(order.status);
     final nextAction = _nextAction(order, isPickupLeg, isDeliveryLeg);
     final canGiveUpPickup =
-        isPickupLeg && (order.status == OrderStatus.pending || order.status == OrderStatus.confirmed);
-    final canGiveUpDelivery = isDeliveryLeg && order.status == OrderStatus.atWarehouse;
+        isPickupLeg &&
+        (order.status == OrderStatus.pending ||
+            order.status == OrderStatus.confirmed);
+    final canGiveUpDelivery =
+        isDeliveryLeg && order.status == OrderStatus.atWarehouse;
     // Same leg/status pairs the API shows to customers on the live map, and
     // only once an admin has approved this rider's claim.
     final canShareLocation =
@@ -282,7 +337,9 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
         (isDeliveryLeg &&
             order.deliveryRiderClaimRequestedAt == null &&
             order.status == OrderStatus.outForDelivery);
-    final isSharingLocation = ref.watch(liveLocationSharingProvider).contains(order.id);
+    final isSharingLocation = ref
+        .watch(liveLocationSharingProvider)
+        .contains(order.id);
     if (isSharingLocation && !canShareLocation) {
       // The leg just ended (dropped at warehouse, delivered, cancelled…) —
       // stop broadcasting rather than leave the rider tracked for nothing.
@@ -332,6 +389,21 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
           label: 'Delivery to ${order.receiverName}',
           address: order.deliveryLocation.addressLine,
         ),
+        if (isPickupLeg || isDeliveryLeg) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => _openNavigation(
+                isPickupLeg
+                    ? order.pickupLocation
+                    : order.deliveryLocation,
+              ),
+              icon: const Icon(LucideIcons.navigation),
+              label: const Text('Navigate'),
+            ),
+          ),
+        ],
         const SizedBox(height: 10),
         _AddressCard(
           icon: LucideIcons.userRound,
@@ -356,12 +428,20 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
               children: [
                 Row(
                   children: [
-                    Icon(LucideIcons.package, size: 16, color: context.colors.textMuted),
+                    Icon(
+                      LucideIcons.package,
+                      size: 16,
+                      color: context.colors.textMuted,
+                    ),
+
                     const SizedBox(width: 8),
                     Expanded(child: Text(p.name)),
                     Text(
                       '${p.weightKg} kg',
-                      style: TextStyle(color: context.colors.textMuted, fontSize: 12.5),
+                      style: TextStyle(
+                        color: context.colors.textMuted,
+                        fontSize: 12.5,
+                      ),
                     ),
                   ],
                 ),
@@ -376,7 +456,10 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
         ),
         if (canShareLocation) ...[
           const SizedBox(height: 24),
-          Text('Location sharing', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Location sharing',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -388,7 +471,10 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
               contentPadding: EdgeInsets.zero,
               value: isSharingLocation,
               onChanged: _toggleLocationSharing,
-              title: const Text('Share my live location', style: TextStyle(fontSize: 13.5)),
+              title: const Text(
+                'Share my live location',
+                style: TextStyle(fontSize: 13.5),
+              ),
               subtitle: Text(
                 isSharingLocation
                     ? 'The sender and receiver can see you on a live map. Keeps running if you leave this screen.'
@@ -401,15 +487,17 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
         const SizedBox(height: 24),
         Text('Actions', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 10),
+        if (nextAction != null)
+          _SwipeActionButton(
+            label: nextAction.label,
+            enabled: !_acting,
+            onComplete: () => _performNextAction(nextAction),
+          ),
+        if (nextAction != null) const SizedBox(height: 10),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
-            if (nextAction != null)
-              FilledButton(
-                onPressed: _acting ? null : () => _performNextAction(nextAction),
-                child: Text(nextAction.label),
-              ),
             if (isDeliveryLeg && order.codAmount != null && !isTerminal)
               _ActionButton(
                 label: 'Collect COD amount',
@@ -467,11 +555,140 @@ class _RiderOrderDetailBodyState extends ConsumerState<_RiderOrderDetailBody> {
   }
 }
 
+class _SwipeActionButton extends StatefulWidget {
+  const _SwipeActionButton({
+    required this.label,
+    required this.enabled,
+    required this.onComplete,
+  });
+
+  final String label;
+  final bool enabled;
+  final Future<void> Function() onComplete;
+
+  @override
+  State<_SwipeActionButton> createState() => _SwipeActionButtonState();
+}
+
+class _SwipeActionButtonState extends State<_SwipeActionButton> {
+  double _dragProgress = 0;
+  bool _completed = false;
+
+  Future<void> _complete() async {
+    if (_completed || !widget.enabled) return;
+    setState(() {
+      _completed = true;
+      _dragProgress = 1;
+    });
+    await widget.onComplete();
+    if (!mounted) return;
+    setState(() {
+      _completed = false;
+      _dragProgress = 0;
+    });
+  }
+
+  void _updateDrag(DragUpdateDetails details, double width) {
+    if (_completed || !widget.enabled) return;
+    const thumbSize = 52.0;
+    final travel = width - thumbSize - 8;
+    setState(() {
+      _dragProgress = (_dragProgress + details.delta.dx / travel).clamp(0, 1);
+    });
+  }
+
+  void _endDrag() {
+    if (_completed || !widget.enabled) return;
+    if (_dragProgress >= 0.82) {
+      _complete();
+    } else {
+      setState(() => _dragProgress = 0);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final thumbOffset = _dragProgress * (width - 60);
+        return GestureDetector(
+          onHorizontalDragUpdate: (details) => _updateDrag(details, width),
+          onHorizontalDragEnd: (_) => _endDrag(),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: double.infinity,
+            height: 60,
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: widget.enabled
+                  ? AppColors.primary
+                  : context.colors.cardAlt,
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(
+                color: widget.enabled
+                    ? AppColors.primary
+                    : context.colors.border,
+              ),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Center(
+                  child: Text(
+                    _completed ? 'Updating...' : widget.label,
+                    style: TextStyle(
+                      color: widget.enabled
+                          ? AppColors.onPrimary
+                          : context.colors.textMuted,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 80),
+                  curve: Curves.easeOut,
+                  left: thumbOffset,
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: context.colors.card,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: context.colors.shadowStrong,
+                          blurRadius: 5,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      _completed
+                          ? LucideIcons.loaderCircle
+                          : LucideIcons.chevronsRight,
+                      color: widget.enabled
+                          ? AppColors.onPrimary
+                          : context.colors.textMuted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _SignatureCaptureDialog extends StatefulWidget {
   const _SignatureCaptureDialog();
 
   @override
-  State<_SignatureCaptureDialog> createState() => _SignatureCaptureDialogState();
+  State<_SignatureCaptureDialog> createState() =>
+      _SignatureCaptureDialogState();
 }
 
 class _SignatureCaptureDialogState extends State<_SignatureCaptureDialog> {
@@ -487,7 +704,8 @@ class _SignatureCaptureDialogState extends State<_SignatureCaptureDialog> {
 
     try {
       final boundary =
-          _boundaryKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+          _boundaryKey.currentContext!.findRenderObject()
+              as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 2);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       image.dispose();
@@ -506,62 +724,92 @@ class _SignatureCaptureDialogState extends State<_SignatureCaptureDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Receiver confirmation'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Ask the receiver to sign below to confirm receipt.'),
-          const SizedBox(height: 12),
-          RepaintBoundary(
-            key: _boundaryKey,
-            child: Container(
-              height: 170,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: Colors.black26),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onPanStart: (details) => setState(() {
-                  _error = null;
-                  _strokes.add([details.localPosition]);
-                }),
-                onPanUpdate: (details) => setState(
-                  () => _strokes.last.add(details.localPosition),
+    final size = MediaQuery.sizeOf(context);
+    final dialogWidth = size.width - 32;
+    final dialogHeight = size.height - 48;
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 720, maxHeight: dialogHeight),
+        child: SizedBox(
+          width: dialogWidth > 720 ? 720 : dialogWidth,
+          height: dialogHeight,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Receiver confirmation',
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-                child: CustomPaint(
-                  painter: _SignaturePainter(_strokes),
-                  child: const SizedBox.expand(),
+                const SizedBox(height: 8),
+                const Text(
+                  'Ask the receiver to sign below to confirm receipt.',
                 ),
-              ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: RepaintBoundary(
+                    key: _boundaryKey,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: Colors.black26),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onPanStart: (details) => setState(() {
+                          _error = null;
+                          _strokes.add([details.localPosition]);
+                        }),
+                        onPanUpdate: (details) => setState(
+                          () => _strokes.last.add(details.localPosition),
+                        ),
+                        child: CustomPaint(
+                          painter: _SignaturePainter(_strokes),
+                          child: const SizedBox.expand(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => setState(() {
+                        _strokes.clear();
+                        _error = null;
+                      }),
+                      child: const Text('Clear'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                    FilledButton(
+                      onPressed: _save,
+                      child: const Text('Confirm receipt'),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          if (_error != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              _error!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ],
-        ],
+        ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => setState(() {
-            _strokes.clear();
-            _error = null;
-          }),
-          child: const Text('Clear'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(onPressed: _save, child: const Text('Confirm receipt')),
-      ],
     );
   }
 }
@@ -637,7 +885,10 @@ class _PaymentSummary extends StatelessWidget {
       runSpacing: 8,
       children: [
         _PaymentPill(icon: method.icon, label: method.label),
-        _PaymentPill(icon: LucideIcons.userRound, label: orderPayerLabel(order.payer)),
+        _PaymentPill(
+          icon: LucideIcons.userRound,
+          label: orderPayerLabel(order.payer),
+        ),
         if (order.codAmount != null)
           _PaymentPill(
             icon: LucideIcons.banknote,
@@ -682,7 +933,11 @@ class _PaymentPill extends StatelessWidget {
 }
 
 class _AddressCard extends StatelessWidget {
-  const _AddressCard({required this.icon, required this.label, required this.address});
+  const _AddressCard({
+    required this.icon,
+    required this.label,
+    required this.address,
+  });
 
   final IconData icon;
   final String label;
@@ -707,7 +962,10 @@ class _AddressCard extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(fontSize: 11.5, color: context.colors.textMuted),
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: context.colors.textMuted,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(address, style: const TextStyle(fontSize: 13.5)),
@@ -721,7 +979,11 @@ class _AddressCard extends StatelessWidget {
 }
 
 class _TimelineTile extends StatelessWidget {
-  const _TimelineTile({required this.event, required this.isLast, required this.isCurrent});
+  const _TimelineTile({
+    required this.event,
+    required this.isLast,
+    required this.isCurrent,
+  });
 
   final OrderTrackingEvent event;
   final bool isLast;
@@ -752,7 +1014,9 @@ class _TimelineTile extends StatelessWidget {
                 ),
               ),
               if (!isLast)
-                Expanded(child: Container(width: 2, color: context.colors.border)),
+                Expanded(
+                  child: Container(width: 2, color: context.colors.border),
+                ),
             ],
           ),
           const SizedBox(width: 12),
@@ -764,19 +1028,28 @@ class _TimelineTile extends StatelessWidget {
                 children: [
                   Text(
                     event.title,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
                   ),
                   if (event.description != null) ...[
                     const SizedBox(height: 2),
                     Text(
                       event.description!,
-                      style: TextStyle(fontSize: 12.5, color: context.colors.textMuted),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: context.colors.textMuted,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 3),
                   Text(
                     DateFormat('MMM d, h:mm a').format(event.createdAt),
-                    style: TextStyle(fontSize: 11.5, color: context.colors.textMuted),
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: context.colors.textMuted,
+                    ),
                   ),
                 ],
               ),

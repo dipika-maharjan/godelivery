@@ -24,7 +24,6 @@ class _RiderProfilePageState extends ConsumerState<RiderProfilePage> {
   bool _loading = true;
   bool _acting = false;
   String? _error;
-
   @override
   void initState() {
     super.initState();
@@ -37,7 +36,9 @@ class _RiderProfilePageState extends ConsumerState<RiderProfilePage> {
       final rider = await ref.read(ridersRepositoryProvider).getMe();
       BankAccount? bankAccount;
       try {
-        bankAccount = await ref.read(ridersRepositoryProvider).getOwnBankAccount();
+        bankAccount = await ref
+            .read(ridersRepositoryProvider)
+            .getOwnBankAccount();
       } catch (_) {
         bankAccount = null;
       }
@@ -49,25 +50,11 @@ class _RiderProfilePageState extends ConsumerState<RiderProfilePage> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = e is ApiException ? e.message : 'Something went wrong.');
+      setState(
+        () => _error = e is ApiException ? e.message : 'Something went wrong.',
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _toggleAvailability(bool value) async {
-    if (_acting) return;
-    setState(() => _acting = true);
-    try {
-      final updated = await ref.read(ridersRepositoryProvider).setAvailability(value);
-      if (!mounted) return;
-      setState(() => _rider = updated);
-    } catch (e) {
-      final message = e is ApiException ? e.message : 'Could not update availability.';
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-    } finally {
-      if (mounted) setState(() => _acting = false);
     }
   }
 
@@ -82,16 +69,22 @@ class _RiderProfilePageState extends ConsumerState<RiderProfilePage> {
     if (result == null) return;
     setState(() => _acting = true);
     try {
-      final updated = await ref.read(ridersRepositoryProvider).updateMe(
+      final updated = await ref
+          .read(ridersRepositoryProvider)
+          .updateMe(
             vehicleType: result.vehicleType,
             vehiclePlateNumber: result.plateNumber,
           );
       if (!mounted) return;
       setState(() => _rider = updated);
     } catch (e) {
-      final message = e is ApiException ? e.message : 'Could not update vehicle info.';
+      final message = e is ApiException
+          ? e.message
+          : 'Could not update vehicle info.';
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _acting = false);
     }
@@ -106,7 +99,9 @@ class _RiderProfilePageState extends ConsumerState<RiderProfilePage> {
     if (result == null) return;
     setState(() => _acting = true);
     try {
-      final updated = await ref.read(ridersRepositoryProvider).upsertOwnBankAccount(
+      final updated = await ref
+          .read(ridersRepositoryProvider)
+          .upsertOwnBankAccount(
             bankName: result.bankName,
             accountName: result.accountName,
             accountNumber: result.accountNumber,
@@ -115,9 +110,13 @@ class _RiderProfilePageState extends ConsumerState<RiderProfilePage> {
       if (!mounted) return;
       setState(() => _bankAccount = updated);
     } catch (e) {
-      final message = e is ApiException ? e.message : 'Could not update bank details.';
+      final message = e is ApiException
+          ? e.message
+          : 'Could not update bank details.';
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _acting = false);
     }
@@ -138,7 +137,10 @@ class _RiderProfilePageState extends ConsumerState<RiderProfilePage> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Log out', style: TextStyle(color: AppColors.danger)),
+            child: const Text(
+              'Log out',
+              style: TextStyle(color: AppColors.danger),
+            ),
           ),
         ],
       ),
@@ -166,35 +168,34 @@ class _RiderProfilePageState extends ConsumerState<RiderProfilePage> {
                 children: [
                   Text(
                     user?.name ?? 'Profile',
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   Text(
                     user?.phoneNumber ?? '',
-                    style: TextStyle(color: context.colors.textMuted, fontSize: 13),
+                    style: TextStyle(
+                      color: context.colors.textMuted,
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   if (rider != null) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: context.colors.cardAlt,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        value: rider.isAvailable,
-                        onChanged: _acting ? null : _toggleAvailability,
-                        title: const Text('Online for new deliveries', style: TextStyle(fontSize: 13.5)),
-                      ),
-                    ),
                     const SizedBox(height: 16),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        _InfoPill(icon: LucideIcons.bike, label: vehicleTypeLabel(rider.vehicleType)),
+                        _InfoPill(
+                          icon: LucideIcons.bike,
+                          label: vehicleTypeLabel(rider.vehicleType),
+                        ),
                         if (rider.vehiclePlateNumber != null)
-                          _InfoPill(icon: LucideIcons.idCard, label: rider.vehiclePlateNumber!),
+                          _InfoPill(
+                            icon: LucideIcons.idCard,
+                            label: rider.vehiclePlateNumber!,
+                          ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -204,7 +205,10 @@ class _RiderProfilePageState extends ConsumerState<RiderProfilePage> {
                     ),
                   ],
                   const SizedBox(height: 24),
-                  Text('Bank account', style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    'Bank account',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 10),
                   if (_bankAccount != null)
                     Container(
@@ -223,7 +227,10 @@ class _RiderProfilePageState extends ConsumerState<RiderProfilePage> {
                           const SizedBox(height: 2),
                           Text(
                             '${_bankAccount!.accountName} · ${_bankAccount!.accountNumber}',
-                            style: TextStyle(fontSize: 12.5, color: context.colors.textMuted),
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: context.colors.textMuted,
+                            ),
                           ),
                         ],
                       ),
@@ -236,10 +243,17 @@ class _RiderProfilePageState extends ConsumerState<RiderProfilePage> {
                   const SizedBox(height: 10),
                   OutlinedButton(
                     onPressed: _acting ? null : _editBankAccount,
-                    child: Text(_bankAccount == null ? 'Add bank account' : 'Edit bank account'),
+                    child: Text(
+                      _bankAccount == null
+                          ? 'Add bank account'
+                          : 'Edit bank account',
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  const Text('Appearance', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Appearance',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 10),
                   const _ThemeModeSelector(),
                   const SizedBox(height: 24),
@@ -273,8 +287,9 @@ class _EditVehicleSheet extends StatefulWidget {
 }
 
 class _EditVehicleSheetState extends State<_EditVehicleSheet> {
-  late final _plateController =
-      TextEditingController(text: widget.rider.vehiclePlateNumber);
+  late final _plateController = TextEditingController(
+    text: widget.rider.vehiclePlateNumber,
+  );
   late VehicleType _vehicleType = widget.rider.vehicleType;
 
   @override
@@ -311,7 +326,10 @@ class _EditVehicleSheetState extends State<_EditVehicleSheet> {
                   isExpanded: true,
                   items: [
                     for (final type in VehicleType.values)
-                      DropdownMenuItem(value: type, child: Text(vehicleTypeLabel(type))),
+                      DropdownMenuItem(
+                        value: type,
+                        child: Text(vehicleTypeLabel(type)),
+                      ),
                   ],
                   onChanged: (value) {
                     if (value != null) setState(() => _vehicleType = value);
@@ -367,12 +385,18 @@ class _EditBankAccountSheet extends StatefulWidget {
 }
 
 class _EditBankAccountSheetState extends State<_EditBankAccountSheet> {
-  late final _bankNameController = TextEditingController(text: widget.existing?.bankName);
-  late final _accountNameController =
-      TextEditingController(text: widget.existing?.accountName);
-  late final _accountNumberController =
-      TextEditingController(text: widget.existing?.accountNumber);
-  late final _branchController = TextEditingController(text: widget.existing?.branch);
+  late final _bankNameController = TextEditingController(
+    text: widget.existing?.bankName,
+  );
+  late final _accountNameController = TextEditingController(
+    text: widget.existing?.accountName,
+  );
+  late final _accountNumberController = TextEditingController(
+    text: widget.existing?.accountNumber,
+  );
+  late final _branchController = TextEditingController(
+    text: widget.existing?.branch,
+  );
 
   @override
   void dispose() {
@@ -406,7 +430,10 @@ class _EditBankAccountSheetState extends State<_EditBankAccountSheet> {
             const SizedBox(height: 12),
             AppTextField(controller: _bankNameController, label: 'Bank name'),
             const SizedBox(height: 12),
-            AppTextField(controller: _accountNameController, label: 'Account holder name'),
+            AppTextField(
+              controller: _accountNameController,
+              label: 'Account holder name',
+            ),
             const SizedBox(height: 12),
             AppTextField(
               controller: _accountNumberController,
@@ -414,22 +441,25 @@ class _EditBankAccountSheetState extends State<_EditBankAccountSheet> {
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 12),
-            AppTextField(controller: _branchController, label: 'Branch (optional)'),
+            AppTextField(
+              controller: _branchController,
+              label: 'Branch (optional)',
+            ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: FilledButton(
                 onPressed: _isValid
                     ? () => Navigator.of(context).pop(
-                          _BankAccountEdit(
-                            bankName: _bankNameController.text.trim(),
-                            accountName: _accountNameController.text.trim(),
-                            accountNumber: _accountNumberController.text.trim(),
-                            branch: _branchController.text.trim().isEmpty
-                                ? null
-                                : _branchController.text.trim(),
-                          ),
-                        )
+                        _BankAccountEdit(
+                          bankName: _bankNameController.text.trim(),
+                          accountName: _accountNameController.text.trim(),
+                          accountNumber: _accountNumberController.text.trim(),
+                          branch: _branchController.text.trim().isEmpty
+                              ? null
+                              : _branchController.text.trim(),
+                        ),
+                      )
                     : null,
                 child: const Text('Save'),
               ),
@@ -465,12 +495,15 @@ class _ThemeModeSelector extends ConsumerWidget {
           for (final (mode, label, icon) in _options)
             Expanded(
               child: InkWell(
-                onTap: () => ref.read(themeModeProvider.notifier).setThemeMode(mode),
+                onTap: () =>
+                    ref.read(themeModeProvider.notifier).setThemeMode(mode),
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    color: selected == mode ? AppColors.primary : Colors.transparent,
+                    color: selected == mode
+                        ? AppColors.primary
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Column(
@@ -478,7 +511,9 @@ class _ThemeModeSelector extends ConsumerWidget {
                       Icon(
                         icon,
                         size: 16,
-                        color: selected == mode ? AppColors.onPrimary : context.colors.text,
+                        color: selected == mode
+                            ? AppColors.onPrimary
+                            : context.colors.text,
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -486,7 +521,9 @@ class _ThemeModeSelector extends ConsumerWidget {
                         style: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
-                          color: selected == mode ? AppColors.onPrimary : context.colors.text,
+                          color: selected == mode
+                              ? AppColors.onPrimary
+                              : context.colors.text,
                         ),
                       ),
                     ],
@@ -519,7 +556,10 @@ class _InfoPill extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: context.colors.text),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );
@@ -556,9 +596,16 @@ class _ActionTile extends StatelessWidget {
             Icon(icon, size: 18, color: color),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+              child: Text(
+                label,
+                style: TextStyle(color: color, fontWeight: FontWeight.w600),
+              ),
             ),
-            Icon(LucideIcons.chevronRight, size: 16, color: context.colors.textMuted),
+            Icon(
+              LucideIcons.chevronRight,
+              size: 16,
+              color: context.colors.textMuted,
+            ),
           ],
         ),
       ),

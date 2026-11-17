@@ -70,7 +70,9 @@ class _LabeledDropdown extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 13),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontSize: 13),
         ),
         const SizedBox(height: 6),
         Container(
@@ -84,6 +86,18 @@ class _LabeledDropdown extends StatelessWidget {
               value: value,
               isExpanded: true,
               items: [
+                if (value.isNotEmpty && !items.contains(value))
+                  DropdownMenuItem(
+                    value: value,
+                    enabled: false,
+                    child: Text(
+                      '$value (current)',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        color: context.colors.textMuted,
+                      ),
+                    ),
+                  ),
                 for (final item in items)
                   DropdownMenuItem(
                     value: item,

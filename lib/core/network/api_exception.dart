@@ -1,5 +1,9 @@
 import 'package:dio/dio.dart';
 
+const _rateLimitMessage =
+    'We’re receiving a high volume of requests right now. '
+    'Please wait a moment and try again.';
+
 /// A user-presentable wrapper around a failed API call.
 class ApiException implements Exception {
   ApiException(this.message, {this.statusCode});
@@ -14,6 +18,12 @@ class ApiException implements Exception {
       } else if (rawMessage is List && rawMessage.isNotEmpty) {
         message = rawMessage.join(', ');
       }
+    }
+    final isRateLimited =
+        error.response?.statusCode == 429 ||
+        (message?.toLowerCase().contains('throttlerexception') ?? false);
+    if (isRateLimited) {
+      message = _rateLimitMessage;
     }
     message ??= switch (error.type) {
       DioExceptionType.connectionTimeout ||

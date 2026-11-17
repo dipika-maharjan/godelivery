@@ -13,28 +13,59 @@ class OrderListTile extends StatelessWidget {
     required this.onTap,
     required this.counterpartyName,
     this.counterpartyLabel = 'To',
+    this.onLongPress,
+    this.selected = false,
+    this.selectionMode = false,
+    this.onSelectionChanged,
   });
 
   final Order order;
   final VoidCallback onTap;
   final String counterpartyName;
   final String counterpartyLabel;
+  final VoidCallback? onLongPress;
+  final bool selected;
+  final bool selectionMode;
+  final VoidCallback? onSelectionChanged;
 
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('MMM d, h:mm a');
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: context.colors.card,
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.12)
+              : context.colors.card,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.colors.border),
+          border: Border.all(
+            color: selected ? AppColors.primary : context.colors.border,
+            width: selected ? 1.5 : 1,
+          ),
         ),
         child: Row(
           children: [
+            if (selectionMode) ...[
+              if (onSelectionChanged != null)
+                Checkbox(
+                  value: selected,
+                  onChanged: (_) => onSelectionChanged!(),
+                  activeColor: AppColors.primary,
+                )
+              else
+                Icon(
+                  selected ? Icons.check_circle : Icons.radio_button_unchecked,
+                  color: selected
+                      ? AppColors.primary
+                      : context.colors.textMuted,
+                  size: 23,
+                ),
+              const SizedBox(width: 10),
+            ],
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -67,6 +98,21 @@ class OrderListTile extends StatelessWidget {
                     style: TextStyle(
                       color: context.colors.textMuted,
                       fontSize: 12.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    order.deliveryType == DeliveryType.scheduled &&
+                            order.scheduledPickupDate != null
+                        ? '${deliveryTypeLabel(order.deliveryType)} · '
+                              '${DateFormat('MMM d').format(order.scheduledPickupDate!)}'
+                              '${order.pickupStartTime != null && order.pickupEndTime != null ? ' · ${order.pickupStartTime}–${order.pickupEndTime}' : ''}'
+                        : '${deliveryTypeLabel(order.deliveryType)} · As soon as possible',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: context.colors.textMuted,
+                      fontSize: 11.5,
                     ),
                   ),
                   const SizedBox(height: 2),

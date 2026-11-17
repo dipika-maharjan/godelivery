@@ -10,6 +10,7 @@ import '../../models/order.dart';
 import '../../providers/orders_provider.dart';
 import '../../widgets/app_text_field.dart';
 import '../../widgets/order_list_tile.dart';
+import '../../widgets/active_consignment_card.dart';
 
 class TrackTab extends ConsumerStatefulWidget {
   const TrackTab({super.key});
@@ -44,6 +45,9 @@ class _TrackTabState extends ConsumerState<TrackTab> {
   @override
   Widget build(BuildContext context) {
     final orders = ref.watch(ordersProvider(OrderRoleFilter.received));
+    final activeOrder = orders.valueOrNull
+        ?.where((order) => activeConsignmentStatuses.contains(order.status))
+        .firstOrNull;
 
     return SafeArea(
       child: Column(
@@ -85,7 +89,10 @@ class _TrackTabState extends ConsumerState<TrackTab> {
                 ),
                 data: (list) {
                   final filtered = _filter(list);
-                  if (filtered.isEmpty) {
+                  final otherOrders = filtered
+                      .where((order) => order.id != activeOrder?.id)
+                      .toList();
+                  if (otherOrders.isEmpty && activeOrder == null) {
                     return _EmptyState(
                       icon: _query.isNotEmpty
                           ? LucideIcons.searchX
@@ -98,10 +105,20 @@ class _TrackTabState extends ConsumerState<TrackTab> {
                   return ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
-                    itemCount: filtered.length,
+                    itemCount:
+                        otherOrders.length + (activeOrder == null ? 0 : 1),
                     separatorBuilder: (_, _) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
-                      final order = filtered[index];
+                      if (activeOrder != null && index == 0) {
+                        return ActiveConsignmentCard(
+                          order: activeOrder,
+                          subtitle: 'Incoming delivery',
+                        );
+                      }
+                      final orderIndex = activeOrder == null
+                          ? index
+                          : index - 1;
+                      final order = otherOrders[orderIndex];
                       return OrderListTile(
                         order: order,
                         counterpartyName:

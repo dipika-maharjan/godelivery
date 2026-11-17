@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/admin/admin_shell.dart';
 import '../../features/admin/orders/admin_order_detail_page.dart';
+import '../../features/admin/orders/admin_create_order_page.dart';
 import '../../features/auth/otp_verify_page.dart';
 import '../../features/auth/personal_details_page.dart';
 import '../../features/auth/sign_in_page.dart';
@@ -48,13 +49,17 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final role = auth.user?.role;
       if (role == UserRole.admin) {
-        if (isAuthEntryRoute || loc.startsWith('/home') || loc.startsWith('/rider')) {
+        if (isAuthEntryRoute ||
+            loc.startsWith('/home') ||
+            loc.startsWith('/rider')) {
           return '/admin';
         }
         return null;
       }
       if (role == UserRole.rider) {
-        if (isAuthEntryRoute || loc.startsWith('/home') || loc.startsWith('/admin')) {
+        if (isAuthEntryRoute ||
+            loc.startsWith('/home') ||
+            loc.startsWith('/admin')) {
           return '/rider';
         }
         return null;
@@ -104,6 +109,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             OrderDetailPage(orderId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/admin', builder: (context, state) => const AdminShell()),
+      GoRoute(
+        path: '/admin/orders/new',
+        builder: (context, state) => const AdminCreateOrderPage(),
+      ),
       GoRoute(
         path: '/admin/orders/:id',
         builder: (context, state) =>

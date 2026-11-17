@@ -7,15 +7,24 @@ import '../../../core/theme/app_theme.dart';
 import '../../../data/order_repository.dart';
 import '../../../models/order.dart';
 import '../../../providers/rider_jobs_provider.dart';
+import '../../../widgets/rider_availability_card.dart';
+import '../../../widgets/active_consignment_card.dart';
 
 class AvailableJobsPage extends ConsumerWidget {
   const AvailableJobsPage({super.key});
 
-  Future<void> _claim(BuildContext context, WidgetRef ref, Order order, RiderJobLeg leg) async {
+  Future<void> _claim(
+    BuildContext context,
+    WidgetRef ref,
+    Order order,
+    RiderJobLeg leg,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Claim this ${leg == RiderJobLeg.pickup ? 'pickup' : 'delivery'}?'),
+        title: Text(
+          'Claim this ${leg == RiderJobLeg.pickup ? 'pickup' : 'delivery'}?',
+        ),
         content: const Text(
           'This reserves the order for you, pending admin approval.',
         ),
@@ -45,9 +54,13 @@ class AvailableJobsPage extends ConsumerWidget {
         const SnackBar(content: Text('Claimed — waiting for admin approval.')),
       );
     } catch (e) {
-      final message = e is ApiException ? e.message : 'Could not claim this order.';
+      final message = e is ApiException
+          ? e.message
+          : 'Could not claim this order.';
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -55,6 +68,10 @@ class AvailableJobsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final leg = ref.watch(availableJobsLegProvider);
     final jobs = ref.watch(availableJobsProvider);
+    final assigned = ref.watch(riderAssignedOrdersProvider);
+    final activeOrder = assigned.valueOrNull
+        ?.where((order) => activeConsignmentStatuses.contains(order.status))
+        .firstOrNull;
 
     return SafeArea(
       child: Column(
@@ -67,6 +84,7 @@ class AvailableJobsPage extends ConsumerWidget {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
             ),
           ),
+          const RiderAvailabilityCard(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Container(
@@ -82,15 +100,17 @@ class AvailableJobsPage extends ConsumerWidget {
                       label: 'Pickup',
                       selected: leg == RiderJobLeg.pickup,
                       onTap: () =>
-                          ref.read(availableJobsLegProvider.notifier).state = RiderJobLeg.pickup,
+                          ref.read(availableJobsLegProvider.notifier).state =
+                              RiderJobLeg.pickup,
                     ),
                   ),
                   Expanded(
                     child: _LegSegment(
                       label: 'Delivery',
                       selected: leg == RiderJobLeg.delivery,
-                      onTap: () => ref.read(availableJobsLegProvider.notifier).state =
-                          RiderJobLeg.delivery,
+                      onTap: () =>
+                          ref.read(availableJobsLegProvider.notifier).state =
+                              RiderJobLeg.delivery,
                     ),
                   ),
                 ],
@@ -100,16 +120,19 @@ class AvailableJobsPage extends ConsumerWidget {
           const SizedBox(height: 12),
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () => ref.read(availableJobsProvider.notifier).refresh(),
+              onRefresh: () =>
+                  ref.read(availableJobsProvider.notifier).refresh(),
               child: jobs.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => Center(
                   child: Text(
-                    error is ApiException ? error.message : 'Something went wrong.',
+                    error is ApiException
+                        ? error.message
+                        : 'Something went wrong.',
                   ),
                 ),
                 data: (list) {
-                  if (list.isEmpty) {
+                  if (list.isEmpty && activeOrder == null) {
                     return ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -132,10 +155,17 @@ class AvailableJobsPage extends ConsumerWidget {
                   return ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
-                    itemCount: list.length,
+                    itemCount: list.length + (activeOrder == null ? 0 : 1),
                     separatorBuilder: (_, _) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
-                      final order = list[index];
+                      if (activeOrder != null && index == 0) {
+                        return ActiveConsignmentCard(
+                          order: activeOrder,
+                          subtitle: 'Your assigned delivery',
+                        );
+                      }
+                      final order =
+                          list[activeOrder == null ? index : index - 1];
                       return _JobTile(
                         order: order,
                         leg: leg,
@@ -154,7 +184,11 @@ class AvailableJobsPage extends ConsumerWidget {
 }
 
 class _JobTile extends StatelessWidget {
-  const _JobTile({required this.order, required this.leg, required this.onClaim});
+  const _JobTile({
+    required this.order,
+    required this.leg,
+    required this.onClaim,
+  });
 
   final Order order;
   final RiderJobLeg leg;
@@ -162,8 +196,9 @@ class _JobTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final location =
-        leg == RiderJobLeg.pickup ? order.pickupLocation : order.deliveryLocation;
+    final location = leg == RiderJobLeg.pickup
+        ? order.pickupLocation
+        : order.deliveryLocation;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -177,7 +212,9 @@ class _JobTile extends StatelessWidget {
           Row(
             children: [
               Icon(
-                leg == RiderJobLeg.pickup ? LucideIcons.store : LucideIcons.mapPin,
+                leg == RiderJobLeg.pickup
+                    ? LucideIcons.store
+                    : LucideIcons.mapPin,
                 size: 16,
                 color: context.colors.textMuted,
               ),
@@ -187,7 +224,10 @@ class _JobTile extends StatelessWidget {
                   location.addressLine,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13.5,
+                  ),
                 ),
               ),
             ],
@@ -209,7 +249,11 @@ class _JobTile extends StatelessWidget {
 }
 
 class _LegSegment extends StatelessWidget {
-  const _LegSegment({required this.label, required this.selected, required this.onTap});
+  const _LegSegment({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -230,7 +274,11 @@ class _LegSegment extends StatelessWidget {
         alignment: Alignment.center,
         child: Text(
           label,
-          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: color),
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -34,6 +35,100 @@ class CreateOrderSheet extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<CreateOrderSheet> createState() => _CreateOrderSheetState();
+}
+
+class _ReceiverContactPicker extends StatefulWidget {
+  const _ReceiverContactPicker({required this.contacts});
+
+  final List<Contact> contacts;
+
+  @override
+  State<_ReceiverContactPicker> createState() => _ReceiverContactPickerState();
+}
+
+class _ReceiverContactPickerState extends State<_ReceiverContactPicker> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final query = _searchController.text.trim().toLowerCase();
+    final filteredContacts = widget.contacts.where((contact) {
+      final name = (contact.displayName ?? '').toLowerCase();
+      final phones = contact.phones
+          .map((phone) => phone.number.toLowerCase())
+          .join(' ');
+      final emails = contact.emails
+          .map((email) => email.address.toLowerCase())
+          .join(' ');
+      return query.isEmpty ||
+          name.contains(query) ||
+          phones.contains(query) ||
+          emails.contains(query);
+    }).toList();
+
+    return SafeArea(
+      child: SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.8,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Search contacts',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: query.isEmpty
+                      ? null
+                      : IconButton(
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {});
+                          },
+                          icon: const Icon(Icons.clear),
+                        ),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+            Expanded(
+              child: filteredContacts.isEmpty
+                  ? const Center(child: Text('No matching contacts.'))
+                  : ListView.builder(
+                      itemCount: filteredContacts.length,
+                      itemBuilder: (context, index) {
+                        final contact = filteredContacts[index];
+                        final phone = contact.phones.isEmpty
+                            ? null
+                            : contact.phones.first.number;
+                        final displayName = contact.displayName ?? '';
+                        return ListTile(
+                          leading: const CircleAvatar(
+                            child: Icon(Icons.person_outline),
+                          ),
+                          title: Text(
+                            displayName.isEmpty
+                                ? phone ?? 'Unnamed contact'
+                                : displayName,
+                          ),
+                          subtitle: phone == null ? null : Text(phone),
+                          onTap: () => Navigator.pop(context, contact),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _PackageImageDraft {
@@ -78,7 +173,10 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
   _PickupMode _pickupMode = _PickupMode.shopDefault;
   SavedLocation? _selectedSavedLocation;
   PickedLocation? _customPickupLocation;
+  DeliveryType _deliveryType = DeliveryType.normal;
   DateTime? _scheduledPickupDate;
+  TimeOfDay _pickupStartTime = const TimeOfDay(hour: 9, minute: 0);
+  TimeOfDay _pickupEndTime = const TimeOfDay(hour: 17, minute: 0);
   Timer? _lookupDebounce;
   Timer? _estimateDebounce;
   bool _looking = false;
@@ -172,7 +270,7 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
   }
 
   Future<void> _pickScheduledDate() async {
-    final now = DateTime.now();
+    final now = DateUtils.dateOnly(DateTime.now());
     final picked = await showDatePicker(
       context: context,
       initialDate: _scheduledPickupDate ?? now,
@@ -182,6 +280,42 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
     if (picked != null) {
       setState(() => _scheduledPickupDate = picked);
     }
+  }
+
+  Future<void> _pickPickupTime({required bool start}) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: start ? _pickupStartTime : _pickupEndTime,
+    );
+    if (picked == null) return;
+    setState(() {
+      if (start) {
+        _pickupStartTime = picked;
+      } else {
+        _pickupEndTime = picked;
+      }
+    });
+  }
+
+  String _formatPickupTime(TimeOfDay time) =>
+      '${time.hour.toString().padLeft(2, '0')}:'
+      '${time.minute.toString().padLeft(2, '0')}';
+
+  String? get _scheduleValidationMessage {
+    if (_deliveryType != DeliveryType.scheduled) return null;
+    if (_scheduledPickupDate == null) {
+      return 'Choose a pickup date for scheduled delivery.';
+    }
+    final today = DateUtils.dateOnly(DateTime.now());
+    if (_scheduledPickupDate!.isBefore(today)) {
+      return 'Pickup date cannot be in the past.';
+    }
+    final startMinutes = _pickupStartTime.hour * 60 + _pickupStartTime.minute;
+    final endMinutes = _pickupEndTime.hour * 60 + _pickupEndTime.minute;
+    if (endMinutes <= startMinutes) {
+      return 'Pickup end time must be after the start time.';
+    }
+    return null;
   }
 
   void _onPhoneChanged(String value) {
@@ -224,6 +358,64 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
       setState(() => _deliveryLocation = picked);
       _scheduleEstimate();
     }
+  }
+
+  Future<void> _pickReceiverContact() async {
+    final permission = await FlutterContacts.permissions.request(
+      PermissionType.read,
+    );
+    if (permission != PermissionStatus.granted) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Allow contact access to choose a receiver.'),
+        ),
+      );
+      return;
+    }
+
+    final contacts = await FlutterContacts.getAll(
+      properties: {
+        ContactProperty.name,
+        ContactProperty.phone,
+        ContactProperty.email,
+      },
+    );
+    if (!mounted) return;
+    if (contacts.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No contacts found.')));
+      return;
+    }
+
+    final contact = await showModalBottomSheet<Contact>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (_) => _ReceiverContactPicker(contacts: contacts),
+    );
+    if (contact == null || !mounted) return;
+
+    final rawPhone = contact.phones.isEmpty
+        ? ''
+        : contact.phones.first.number.replaceAll(RegExp(r'\D'), '');
+    final phone = rawPhone.startsWith('977') && rawPhone.length > 10
+        ? rawPhone.substring(3)
+        : rawPhone;
+    setState(() {
+      _phoneController.text = phone.length > 10
+          ? phone.substring(0, 10)
+          : phone;
+      final displayName = contact.displayName ?? '';
+      if (displayName.isNotEmpty) {
+        _nameController.text = displayName;
+      }
+      if (contact.emails.isNotEmpty) {
+        _emailController.text = contact.emails.first.address;
+      }
+    });
+    _onPhoneChanged(_phoneController.text);
   }
 
   void _addPackage() {
@@ -275,6 +467,7 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
               ),
               totalWeightKg: totalWeight,
               hasDangerousGoods: _packages.any((p) => p.isDangerous),
+              deliveryType: _deliveryType,
             ),
           );
       if (!mounted) return;
@@ -296,6 +489,7 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
     if (_pickupMode == _PickupMode.custom && _customPickupLocation == null) {
       return false;
     }
+    if (_scheduleValidationMessage != null) return false;
     for (final p in _packages) {
       if (p.nameController.text.trim().isEmpty) return false;
       final weight = double.tryParse(p.weightController.text.trim());
@@ -306,7 +500,15 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
   }
 
   Future<void> _submit() async {
-    if (!_isValid || _submitting) return;
+    if (_submitting) return;
+    final scheduleError = _scheduleValidationMessage;
+    if (scheduleError != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(scheduleError)));
+      return;
+    }
+    if (!_isValid) return;
     setState(() => _submitting = true);
     final delivery = _deliveryLocation!;
     try {
@@ -332,7 +534,16 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
                 _pickupContactPhoneController.text.trim().isEmpty
                 ? null
                 : _pickupContactPhoneController.text.trim(),
-            scheduledPickupDate: _scheduledPickupDate,
+            deliveryType: _deliveryType,
+            scheduledPickupDate: _deliveryType == DeliveryType.scheduled
+                ? _scheduledPickupDate
+                : null,
+            pickupStartTime: _deliveryType == DeliveryType.scheduled
+                ? _formatPickupTime(_pickupStartTime)
+                : null,
+            pickupEndTime: _deliveryType == DeliveryType.scheduled
+                ? _formatPickupTime(_pickupEndTime)
+                : null,
             receiverName: _nameController.text.trim(),
             receiverPhoneNumber: _phoneController.text.trim(),
             receiverEmail: _emailController.text.trim().isEmpty
@@ -453,8 +664,11 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
                             ),
                           ),
                         ),
-                        suffix: _looking
-                            ? const Padding(
+                        suffix: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_looking)
+                              const Padding(
                                 padding: EdgeInsets.all(14),
                                 child: SizedBox(
                                   height: 16,
@@ -463,8 +677,14 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
                                     strokeWidth: 2,
                                   ),
                                 ),
-                              )
-                            : null,
+                              ),
+                            IconButton(
+                              onPressed: _pickReceiverContact,
+                              icon: const Icon(Icons.contacts),
+                              tooltip: 'Choose from contacts',
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 12),
                       AppTextField(
@@ -528,9 +748,20 @@ class _CreateOrderSheetState extends ConsumerState<CreateOrderSheet> {
                       ),
                       const SizedBox(height: 12),
                       _ScheduledPickupField(
+                        deliveryType: _deliveryType,
                         date: _scheduledPickupDate,
-                        onTap: _pickScheduledDate,
-                        onClear: () =>
+                        startTime: _pickupStartTime,
+                        endTime: _pickupEndTime,
+                        onDeliveryTypeChanged: (type) => setState(() {
+                          _deliveryType = type;
+                          if (type != DeliveryType.scheduled) {
+                            _scheduledPickupDate = null;
+                          }
+                        }),
+                        onDateTap: _pickScheduledDate,
+                        onStartTimeTap: () => _pickPickupTime(start: true),
+                        onEndTimeTap: () => _pickPickupTime(start: false),
+                        onClearDate: () =>
                             setState(() => _scheduledPickupDate = null),
                       ),
                       const SizedBox(height: 24),
@@ -699,22 +930,206 @@ class _PickupSummaryField extends StatelessWidget {
 
 class _ScheduledPickupField extends StatelessWidget {
   const _ScheduledPickupField({
+    required this.deliveryType,
     required this.date,
-    required this.onTap,
-    required this.onClear,
+    required this.startTime,
+    required this.endTime,
+    required this.onDeliveryTypeChanged,
+    required this.onDateTap,
+    required this.onStartTimeTap,
+    required this.onEndTimeTap,
+    required this.onClearDate,
   });
 
+  final DeliveryType deliveryType;
   final DateTime? date;
-  final VoidCallback onTap;
-  final VoidCallback onClear;
+  final TimeOfDay startTime;
+  final TimeOfDay endTime;
+  final ValueChanged<DeliveryType> onDeliveryTypeChanged;
+  final VoidCallback onDateTap;
+  final VoidCallback onStartTimeTap;
+  final VoidCallback onEndTimeTap;
+  final VoidCallback onClearDate;
 
   @override
   Widget build(BuildContext context) {
+    final options = [
+      (type: DeliveryType.express, description: 'Pickup as soon as possible'),
+      (type: DeliveryType.normal, description: 'Standard delivery service'),
+      (type: DeliveryType.scheduled, description: 'Choose a pickup time slot'),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Delivery type',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontSize: 13),
+        ),
+        const SizedBox(height: 8),
+        ...options.map(
+          (option) => _DeliveryTypeOption(
+            type: option.type,
+            description: option.description,
+            selectedType: deliveryType,
+            onChanged: onDeliveryTypeChanged,
+          ),
+        ),
+        if (deliveryType == DeliveryType.scheduled) ...[
+          const SizedBox(height: 4),
+          InkWell(
+            onTap: onDateTap,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: context.colors.cardAlt,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.calendarClock, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      date == null
+                          ? 'Choose pickup date'
+                          : 'Pickup date: ${DateFormat('MMM d, y').format(date!)}',
+                      style: const TextStyle(fontSize: 13.5),
+                    ),
+                  ),
+                  if (date != null)
+                    IconButton(
+                      onPressed: onClearDate,
+                      icon: const Icon(LucideIcons.x, size: 16),
+                      visualDensity: VisualDensity.compact,
+                    )
+                  else
+                    Icon(
+                      LucideIcons.chevronRight,
+                      size: 18,
+                      color: context.colors.textMuted,
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _TimePickerField(
+                  label: 'From',
+                  time: startTime,
+                  onTap: onStartTimeTap,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _TimePickerField(
+                  label: 'Until',
+                  time: endTime,
+                  onTap: onEndTimeTap,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _DeliveryTypeOption extends StatelessWidget {
+  const _DeliveryTypeOption({
+    required this.type,
+    required this.description,
+    required this.selectedType,
+    required this.onChanged,
+  });
+
+  final DeliveryType type;
+  final String description;
+  final DeliveryType selectedType;
+  final ValueChanged<DeliveryType> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = selectedType == type;
+    return Semantics(
+      label: '${deliveryTypeLabel(type)} delivery',
+      hint: description,
+      selected: selected,
+      child: InkWell(
+        onTap: () => onChanged(type),
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primary.withValues(alpha: 0.16)
+                : context.colors.cardAlt,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? AppColors.primary : context.colors.border,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Radio<DeliveryType>(
+                value: type,
+                groupValue: selectedType,
+                onChanged: (_) => onChanged(type),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      deliveryTypeLabel(type),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.colors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TimePickerField extends StatelessWidget {
+  const _TimePickerField({
+    required this.label,
+    required this.time,
+    required this.onTap,
+  });
+
+  final String label;
+  final TimeOfDay time;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final formatted =
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
-        width: double.infinity,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: context.colors.cardAlt,
@@ -722,28 +1137,23 @@ class _ScheduledPickupField extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(LucideIcons.calendarClock, size: 18, color: context.colors.text),
-            const SizedBox(width: 10),
+            const Icon(LucideIcons.clock3, size: 18),
+            const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                date == null
-                    ? 'Pickup date: as soon as possible'
-                    : 'Pickup date: ${DateFormat('MMM d, y').format(date!)}',
-                style: const TextStyle(fontSize: 13.5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: context.colors.textMuted,
+                      fontSize: 11,
+                    ),
+                  ),
+                  Text(formatted, style: const TextStyle(fontSize: 13.5)),
+                ],
               ),
             ),
-            if (date != null)
-              IconButton(
-                onPressed: onClear,
-                icon: const Icon(LucideIcons.x, size: 16),
-                visualDensity: VisualDensity.compact,
-              )
-            else
-              Icon(
-                LucideIcons.chevronRight,
-                size: 18,
-                color: context.colors.textMuted,
-              ),
           ],
         ),
       ),
@@ -779,9 +1189,8 @@ class _PickupLocationSheet extends ConsumerWidget {
                 title: 'Shop location',
                 subtitle: shopLocation.addressLine,
                 selected: currentMode == _PickupMode.shopDefault,
-                onTap: () => Navigator.of(
-                  context,
-                ).pop(const _ShopDefaultSelection()),
+                onTap: () =>
+                    Navigator.of(context).pop(const _ShopDefaultSelection()),
               ),
             savedLocations.when(
               loading: () => const Padding(
@@ -817,18 +1226,15 @@ class _PickupLocationSheet extends ConsumerWidget {
               title: 'Pick a one-off location',
               subtitle: 'Not saved to your address book',
               selected: currentMode == _PickupMode.custom,
-              onTap: () => Navigator.of(
-                context,
-              ).pop(const _CustomLocationSelection()),
+              onTap: () =>
+                  Navigator.of(context).pop(const _CustomLocationSelection()),
             ),
             const SizedBox(height: 4),
             TextButton.icon(
               onPressed: () {
                 Navigator.of(context).pop();
                 Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const SavedAddressesPage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const SavedAddressesPage()),
                 );
               },
               icon: const Icon(LucideIcons.settings2, size: 16),
@@ -883,7 +1289,10 @@ class _PickupOptionTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(

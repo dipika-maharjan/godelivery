@@ -1,3 +1,5 @@
+import 'order.dart';
+
 class Coordinates {
   const Coordinates({required this.latitude, required this.longitude});
 
@@ -16,18 +18,21 @@ class EstimateRequest {
     required this.delivery,
     required this.totalWeightKg,
     this.hasDangerousGoods = false,
+    this.deliveryType = DeliveryType.normal,
   });
 
   final Coordinates pickup;
   final Coordinates delivery;
   final double totalWeightKg;
   final bool hasDangerousGoods;
+  final DeliveryType deliveryType;
 
   Map<String, dynamic> toJson() => {
     'pickup': pickup.toJson(),
     'delivery': delivery.toJson(),
     'totalWeightKg': totalWeightKg,
     'hasDangerousGoods': hasDangerousGoods,
+    'deliveryType': deliveryTypeToJson(deliveryType),
   };
 }
 

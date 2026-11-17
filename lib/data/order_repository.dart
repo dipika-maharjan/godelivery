@@ -26,6 +26,9 @@ class PackageDraft {
   const PackageDraft({
     required this.name,
     required this.weightKg,
+    this.lengthInches,
+    this.widthInches,
+    this.heightInches,
     this.isDangerous = false,
     this.isFragile = true,
     this.isFlammable = true,
@@ -35,6 +38,9 @@ class PackageDraft {
 
   final String name;
   final double weightKg;
+  final double? lengthInches;
+  final double? widthInches;
+  final double? heightInches;
   final bool isDangerous;
   final bool isFragile;
   final bool isFlammable;
@@ -44,6 +50,9 @@ class PackageDraft {
   Map<String, dynamic> toJson() => {
     'name': name,
     'weightKg': weightKg,
+    if (lengthInches != null) 'lengthInches': lengthInches,
+    if (widthInches != null) 'widthInches': widthInches,
+    if (heightInches != null) 'heightInches': heightInches,
     'isDangerous': isDangerous,
     'isFragile': isFragile,
     'isFlammable': isFlammable,
@@ -55,6 +64,34 @@ class PackageDraft {
 final orderRepositoryProvider = Provider<OrderRepository>((ref) {
   return OrderRepository(ref.watch(dioProvider));
 });
+
+class BulkUnassignFailure {
+  const BulkUnassignFailure({required this.id, required this.error});
+
+  final String id;
+  final String error;
+}
+
+class BulkUnassignResult {
+  const BulkUnassignResult({required this.succeeded, required this.failed});
+
+  factory BulkUnassignResult.fromJson(Map<String, dynamic> json) {
+    return BulkUnassignResult(
+      succeeded: (json['succeeded'] as List<dynamic>).cast<String>(),
+      failed: (json['failed'] as List<dynamic>)
+          .map(
+            (item) => BulkUnassignFailure(
+              id: (item as Map<String, dynamic>)['id'] as String,
+              error: item['error'] as String,
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  final List<String> succeeded;
+  final List<BulkUnassignFailure> failed;
+}
 
 class OrderRepository {
   OrderRepository(this._dio);
@@ -151,11 +188,16 @@ class OrderRepository {
 
   Future<Order> create({
     String? senderName,
+    String? senderPhoneNumber,
+    String? senderEmail,
     String? pickupLocationId,
     LocationInput? pickupLocation,
     String? pickupContactName,
     String? pickupContactPhone,
+    DeliveryType deliveryType = DeliveryType.normal,
     DateTime? scheduledPickupDate,
+    String? pickupStartTime,
+    String? pickupEndTime,
     required String receiverName,
     required String receiverPhoneNumber,
     String? receiverEmail,
@@ -164,26 +206,37 @@ class OrderRepository {
     OrderPayer payer = OrderPayer.sender,
     PaymentMethod paymentMethod = PaymentMethod.cod,
     double? codAmount,
+    String? remarks,
   }) async {
     try {
       final response = await _dio.post(
         '/orders',
         data: {
           if (senderName != null) 'senderName': senderName,
+          if (senderPhoneNumber != null) 'senderPhoneNumber': senderPhoneNumber,
+          if (senderEmail != null && senderEmail.isNotEmpty)
+            'senderEmail': senderEmail,
           'payer': orderPayerToJson(payer),
           'paymentMethod': paymentMethodToJson(paymentMethod),
           if (codAmount != null) 'codAmount': codAmount,
+          if (remarks != null && remarks.isNotEmpty) 'remarks': remarks,
           if (pickupLocationId != null) 'pickupLocationId': pickupLocationId,
           if (pickupLocationId == null && pickupLocation != null)
             'pickupLocation': pickupLocation.toJson(),
           if (pickupContactName != null) 'pickupContactName': pickupContactName,
           if (pickupContactPhone != null)
             'pickupContactPhone': pickupContactPhone,
-          if (scheduledPickupDate != null)
+          'deliveryType': deliveryTypeToJson(deliveryType),
+          if (deliveryType == DeliveryType.scheduled &&
+              scheduledPickupDate != null)
             'scheduledPickupDate':
                 '${scheduledPickupDate.year.toString().padLeft(4, '0')}-'
                 '${scheduledPickupDate.month.toString().padLeft(2, '0')}-'
                 '${scheduledPickupDate.day.toString().padLeft(2, '0')}',
+          if (deliveryType == DeliveryType.scheduled && pickupStartTime != null)
+            'pickupStartTime': pickupStartTime,
+          if (deliveryType == DeliveryType.scheduled && pickupEndTime != null)
+            'pickupEndTime': pickupEndTime,
           'receiver': {
             'name': receiverName,
             'phoneNumber': receiverPhoneNumber,
@@ -285,6 +338,21 @@ class OrderRepository {
 
   Future<Order> unassignDelivery(String id) =>
       _post('/orders/$id/unassign-delivery');
+
+  Future<BulkUnassignResult> bulkUnassign({
+    required List<String> ids,
+    required String leg,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/orders/bulk-unassign',
+        data: {'ids': ids, 'leg': leg},
+      );
+      return BulkUnassignResult.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
 
   /// Cancels an order at any (non-terminal) stage — unlike [cancel], which
   /// only works before a rider is assigned (admin).

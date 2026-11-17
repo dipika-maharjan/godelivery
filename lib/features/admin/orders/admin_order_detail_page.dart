@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -38,7 +39,14 @@ class AdminOrderDetailPage extends ConsumerWidget {
     final order = ref.watch(orderDetailProvider(orderId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Order')),
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () => context.go('/admin'),
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Back to orders',
+        ),
+        title: const Text('Order'),
+      ),
       body: order.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(

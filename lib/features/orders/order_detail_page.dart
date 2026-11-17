@@ -207,6 +207,17 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
         const SizedBox(height: 10),
         _PaymentSummary(order: order),
         const SizedBox(height: 10),
+        _AddressCard(
+          icon: LucideIcons.calendarClock,
+          label: 'Delivery type',
+          address: order.deliveryType == DeliveryType.scheduled &&
+                  order.scheduledPickupDate != null
+              ? '${deliveryTypeLabel(order.deliveryType)} · Pickup on '
+                  '${DateFormat('MMM d, y').format(order.scheduledPickupDate!)}'
+                  '${order.pickupStartTime != null && order.pickupEndTime != null ? ' · ${order.pickupStartTime}–${order.pickupEndTime}' : ''}'
+              : '${deliveryTypeLabel(order.deliveryType)} · As soon as possible',
+        ),
+        const SizedBox(height: 10),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
@@ -247,14 +258,6 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
               order.pickupContactName,
               order.pickupContactPhone,
             ].whereType<String>().join(' · '),
-          ),
-        ],
-        if (order.scheduledPickupDate != null) ...[
-          const SizedBox(height: 10),
-          _AddressCard(
-            icon: LucideIcons.calendarClock,
-            label: 'Scheduled pickup',
-            address: DateFormat('MMM d, y').format(order.scheduledPickupDate!),
           ),
         ],
         if (_canCancel(currentUserId)) ...[

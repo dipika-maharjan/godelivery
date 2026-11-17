@@ -58,6 +58,26 @@ String orderStatusToJson(OrderStatus status) => switch (status) {
 
 enum OrderPayer { sender, receiver }
 
+enum DeliveryType { express, normal, scheduled }
+
+DeliveryType deliveryTypeFromJson(String? value) => switch (value) {
+  'EXPRESS' => DeliveryType.express,
+  'SCHEDULED' => DeliveryType.scheduled,
+  _ => DeliveryType.normal,
+};
+
+String deliveryTypeToJson(DeliveryType type) => switch (type) {
+  DeliveryType.express => 'EXPRESS',
+  DeliveryType.normal => 'NORMAL',
+  DeliveryType.scheduled => 'SCHEDULED',
+};
+
+String deliveryTypeLabel(DeliveryType type) => switch (type) {
+  DeliveryType.express => 'Express',
+  DeliveryType.normal => 'Normal',
+  DeliveryType.scheduled => 'Scheduled',
+};
+
 OrderPayer orderPayerFromJson(String value) =>
     value == 'RECEIVER' ? OrderPayer.receiver : OrderPayer.sender;
 
@@ -257,7 +277,10 @@ class Order {
     required this.deliveryLocation,
     this.pickupContactName,
     this.pickupContactPhone,
+    required this.deliveryType,
     this.scheduledPickupDate,
+    this.pickupStartTime,
+    this.pickupEndTime,
     required this.distanceKm,
     required this.totalWeightKg,
     required this.hasDangerousGoods,
@@ -324,9 +347,12 @@ class Order {
       ),
       pickupContactName: json['pickupContactName'] as String?,
       pickupContactPhone: json['pickupContactPhone'] as String?,
+      deliveryType: deliveryTypeFromJson(json['deliveryType'] as String?),
       scheduledPickupDate: json['scheduledPickupDate'] == null
           ? null
           : DateTime.parse(json['scheduledPickupDate'] as String),
+      pickupStartTime: json['pickupStartTime'] as String?,
+      pickupEndTime: json['pickupEndTime'] as String?,
       distanceKm: (json['distanceKm'] as num).toDouble(),
       totalWeightKg: (json['totalWeightKg'] as num).toDouble(),
       hasDangerousGoods: json['hasDangerousGoods'] as bool,
@@ -383,7 +409,10 @@ class Order {
   final LocationResponse deliveryLocation;
   final String? pickupContactName;
   final String? pickupContactPhone;
+  final DeliveryType deliveryType;
   final DateTime? scheduledPickupDate;
+  final String? pickupStartTime;
+  final String? pickupEndTime;
   final double distanceKm;
   final double totalWeightKg;
   final bool hasDangerousGoods;
